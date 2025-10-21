@@ -28,7 +28,7 @@ class LevelLoader:
 
 
 if __name__ == "__main__":
-    ll = LevelLoader(Path("./data/levels.jsonl"))
+    ll = LevelLoader(Path("../data/levels.jsonl"))
     lg = ll.get_levels_generator()
 
     for i, lvl in enumerate(lg):
