@@ -1,4 +1,4 @@
 from models.level import Level
-from models.game_state import GameState
+from models.game_state import CellState, GameState
 
-__all__ = ["Level", "GameState"]
+__all__ = ["CellState", "GameState", "Level"]

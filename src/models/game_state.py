@@ -1,67 +1,70 @@
 import numpy as np
+from enum import IntEnum
 from typing import Final, List, Tuple
 
-from cell_codec import CellState, encode_cell
 from models import Level
 
 
-class GameState:
-    NEIGHBOURS: Final[List[Tuple[int, int]]] = [
-        (dr, dc) for dr in (-1, 0, 1) for dc in (-1, 0, 1) if not (dr == 0 and dc == 0)
-    ]
+class CellState(IntEnum):
+    EMPTY = 0
+    BLOCKED = 1
+    QUEEN = 2
 
-    def __init__(self, grid: np.ndarray, size: int) -> None:
-        self.grid = grid
-        self.size = size
+
+class GameState:
+    # fmt: off
+    NEIGHBOURS: Final[List[Tuple[int, int]]] = [
+        (-1, -1), (-1,  0), (-1,  1), ( 0, -1),
+        ( 0,  1), ( 1, -1), ( 1,  0), ( 1,  1),
+    ]
+    # fmt:on
+
+    def __init__(self, states: np.ndarray, colors: np.ndarray) -> None:
+        self.states = states
+        self.colors = colors
+        self.size = states.shape[0]
+
+        self.queen_mask = self.states == CellState.QUEEN
 
     @classmethod
     def from_level(cls, level: Level) -> "GameState":
         size = level.size
+        states = np.full((size, size), CellState.EMPTY, dtype=np.uint8)
+        colors = np.zeros((size, size), dtype=np.uint8)
 
-        grid = np.array(
-            [
-                [
-                    encode_cell(CellState.EMPTY, level.color_regions[r][c])
-                    for c in range(size)
-                ]
-                for r in range(size)
-            ],
-            dtype=np.uint8,
-        )
+        for r in range(size):
+            for c in range(size):
+                color_char = level.color_regions[r][c].upper()
+                colors[r, c] = ord(color_char) - ord("A")
+        return cls(states, colors)
 
-        return cls(grid, size)
+    def can_place_queen(self, r: int, c: int) -> bool: ...
 
     def is_goal_state(self) -> bool:
-        states = np.right_shift(self.grid, 5) & 0b11
-        colors = self.grid & 0b11111
-
-        # create a mask of where queens are
-        queen_mask = states == CellState.QUEEN
-
         # CHECK 1: only 1 queen per row and column
-        if np.any(np.sum(queen_mask, axis=1) > 1):
+        if np.any(np.sum(self.queen_mask, axis=1) > 1):
             return False
 
-        if np.any(np.sum(queen_mask, axis=0) > 1):
+        if np.any(np.sum(self.queen_mask, axis=0) > 1):
             return False
 
         # CHECK 2: no queens adjacent to one another
-        queen_positions = np.argwhere(queen_mask)
+        queen_positions = np.argwhere(self.queen_mask)
         for r, c in queen_positions:
             for dr, dc in GameState.NEIGHBOURS:
                 nr, nc = r + dr, c + dc
                 if 0 <= nr < self.size and 0 <= nc < self.size:
-                    if queen_mask[nr, nc]:
+                    if self.queen_mask[nr, nc]:
                         return False
 
         # CHECK 3: every color region has exactly 1 queen
-        queen_colors = colors[queen_mask]
+        queen_colors = self.colors[self.queen_mask]
         colors_with_queen, counts = np.unique(queen_colors, return_counts=True)
 
         if np.any(counts != 1):
             return False
 
-        all_colors = np.unique(colors)
+        all_colors = np.unique(self.colors)
         if set(colors_with_queen) != set(all_colors):
             return False
 
