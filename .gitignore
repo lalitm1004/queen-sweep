@@ -11,3 +11,6 @@ wheels/
 
 # Javascript
 node_modules/
+
+# Rust
+target/
