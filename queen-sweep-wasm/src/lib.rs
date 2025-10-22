@@ -1,4 +1,4 @@
-use queen_sweep_core::GameState;
+use queen_sweep_core::{GameState, depth_first_search};
 use serde_wasm_bindgen::{from_value, to_value};
 use wasm_bindgen::prelude::*;
 
@@ -18,7 +18,7 @@ impl WasmGameState {
 
     #[wasm_bindgen]
     pub fn solve(&self) -> Option<WasmGameState> {
-        GameState::depth_first_search(self.inner.clone()).map(|gs| WasmGameState { inner: gs })
+        depth_first_search(self.inner.clone()).map(|gs| WasmGameState { inner: gs })
     }
 
     #[wasm_bindgen]
