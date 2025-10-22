@@ -10,6 +10,9 @@ def main():
     level_generator = level_loader.get_levels_generator()
 
     level = next(level_generator)
+    level = next(level_generator)
+    level = next(level_generator)
+    level = next(level_generator)
     # level = level_loader.get_random_level()
 
     print(f"ID - {level.id} | Size - {level.size}")
