@@ -1,8 +1,6 @@
-// Node target uses require() or import default, no need to call init()
-import { WasmGameState } from './pkg/queen_sweep_wasm.js';
+import { GameStateWasm } from './pkg/queen_sweep_wasm.js';
 
-// Example usage
-async function main() {
+function main() {
     const colorRegions = [
         [0, 0, 1, 1, 1, 2, 2, 2],
         [0, 3, 1, 3, 1, 4, 2, 2],
@@ -14,7 +12,8 @@ async function main() {
         [7, 7, 7, 7, 6, 6, 6, 6]
     ];
 
-    const game = new WasmGameState(colorRegions);
+    const colorRegionsUint8 = colorRegions.map(row => new Uint8Array(row));
+    const game = new GameStateWasm(colorRegionsUint8);
 
     console.log("Original board:", game.get_states_2d());
 

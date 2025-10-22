@@ -11,3 +11,4 @@ wasm-bindgen = "0.2"
 queen-sweep-core = { path = "../queen-sweep-core" }
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.6.5"
+js-sys = "0.3.81"

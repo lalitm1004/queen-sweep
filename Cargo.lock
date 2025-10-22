@@ -53,6 +53,7 @@ version = "0.1.0"
 name = "queen-sweep-wasm"
 version = "0.1.0"
 dependencies = [
+ "js-sys",
  "queen-sweep-core",
  "serde",
  "serde-wasm-bindgen",
