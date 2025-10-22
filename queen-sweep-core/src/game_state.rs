@@ -1,8 +1,9 @@
-use crate::cell_state::CellState;
 use std::{
     collections::{HashMap, HashSet},
     hash::{Hash, Hasher},
 };
+
+use crate::cell_state::CellState;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct GameState {
