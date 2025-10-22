@@ -1,4 +1,5 @@
 import json
+import random
 from typing import Generator, List
 from pathlib import Path
 
@@ -25,6 +26,9 @@ class LevelLoader:
     def get_levels_generator(self) -> Generator[Level, None, None]:
         for level in self.levels:
             yield level
+
+    def get_random_level(self) -> Level:
+        return random.choice(self.levels)
 
 
 if __name__ == "__main__":
