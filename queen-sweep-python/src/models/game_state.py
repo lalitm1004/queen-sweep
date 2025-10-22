@@ -145,9 +145,9 @@ class GameState:
     def pretty_print(self) -> None:
         init(autoreset=True)
 
-        print("  " + " ".join(str(i) for i in range(self.size)))
+        print("   " + " ".join(str(i) for i in range(self.size)))
         for r in range(self.size):
-            row_str = f"{r} "
+            row_str = f"{r:2} "
             for c in range(self.size):
                 color_index = self.colors[r, c] % len(GameState.BACK_COLORS)
                 back_color = GameState.BACK_COLORS[color_index]

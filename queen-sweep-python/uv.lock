@@ -116,7 +116,7 @@ wheels = [
 ]
 
 [[package]]
-name = "queen-sweep"
+name = "queen-sweep-python"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
