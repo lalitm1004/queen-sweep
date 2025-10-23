@@ -63,6 +63,22 @@ impl GameState {
         GameState::new(states, colors, size)
     }
 
+    pub fn get_queen_positions(&self) -> Vec<(usize, usize)> {
+        self.states
+            .iter()
+            .enumerate()
+            .filter_map(|(i, state)| {
+                if *state == CellState::Queen {
+                    let r = i / self.size;
+                    let c = i % self.size;
+                    Some((r, c))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
     fn can_place_queen(&self, r: usize, c: usize) -> bool {
         let idx = self.index(r, c);
 

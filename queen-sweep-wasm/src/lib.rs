@@ -21,6 +21,19 @@ impl GameStateWasm {
     }
 
     #[wasm_bindgen]
+    pub fn get_queen_positions(&self) -> Vec<Uint8Array> {
+        let positions = self.0.get_queen_positions();
+
+        positions
+            .into_iter()
+            .map(|(r, c)| {
+                let arr = vec![r as u8, c as u8];
+                Uint8Array::from(arr.as_slice())
+            })
+            .collect()
+    }
+
+    #[wasm_bindgen]
     pub fn get_states(&self) -> Vec<u8> {
         self.0.states.iter().map(|&s| s as u8).collect()
     }
