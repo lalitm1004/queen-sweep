@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "wasm-pack build --target nodejs --out-dir pkg",
+    "build:nodejs": "wasm-pack build --target nodejs --out-dir pkg",
     "test": "npx tsx index.ts"
   },
   "devDependencies": {
