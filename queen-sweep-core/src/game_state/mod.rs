@@ -6,6 +6,17 @@ use std::{
 
 use crate::{CellState, heuristic::HeuristicFn};
 
+const NEIGHBOR_DISPLACEMENTS: [(i32, i32); 8] = [
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+    (0, -1),
+    (0, 1),
+    (1, -1),
+    (1, 0),
+    (1, 1),
+];
+
 #[derive(Debug, Clone)]
 pub struct GameState {
     pub size: usize,
@@ -13,6 +24,7 @@ pub struct GameState {
     colors_with_queens: Vec<bool>,
 
     // immutable once initialized
+    colors: Rc<[u8]>,
     color_masks: Rc<[Rc<[bool]>]>,
 
     heuristic: Option<HeuristicFn>,
@@ -20,8 +32,8 @@ pub struct GameState {
 
 impl GameState {
     #[inline]
-    pub fn pos_to_idx(&self, pos: (usize, usize)) -> usize {
-        pos.0 * self.size + pos.1
+    pub fn pos_to_idx(&self, r: usize, c: usize) -> usize {
+        r * self.size + c
     }
 
     #[inline]
@@ -30,6 +42,21 @@ impl GameState {
         let c = idx % self.size;
 
         (r, c)
+    }
+
+    #[inline]
+    pub fn is_goal_state(&self) -> bool {
+        self.colors_with_queens.len() == self.size
+    }
+
+    #[inline]
+    pub fn color_at_idx(&self, idx: usize) -> usize {
+        self.colors[idx] as usize
+    }
+
+    #[inline]
+    pub fn color_mask(&self, color: usize) -> &[bool] {
+        &self.color_masks[color]
     }
 
     pub fn from_color_regions(color_regions: Vec<Vec<u8>>, heuristic: Option<HeuristicFn>) -> Self {
@@ -57,18 +84,65 @@ impl GameState {
 
         let colors_with_queens = vec![false; size];
 
+        let colors: Rc<[u8]> = Rc::from(colors);
+
         GameState {
             size,
             states,
             colors_with_queens,
             color_masks,
+            colors,
             heuristic,
         }
     }
 
-    #[inline]
-    pub fn is_goal_state(&self) -> bool {
-        self.colors_with_queens.len() == self.size
+    pub fn place_queen(&self, r: usize, c: usize) -> Self {
+        let mut new_states = self.states.clone();
+        let mut new_colors_with_queens = self.colors_with_queens.clone();
+
+        let idx = self.pos_to_idx(r, c);
+
+        // block row and col
+        for i in 0..self.size {
+            let row_idx = self.pos_to_idx(r, i);
+            let col_idx = self.pos_to_idx(i, c);
+
+            new_states[row_idx] = CellState::Blocked;
+            new_states[col_idx] = CellState::Blocked;
+        }
+
+        // block neighbors
+        for (dr, dc) in NEIGHBOR_DISPLACEMENTS {
+            let nr = r as i32 + dr;
+            let nc = c as i32 + dc;
+
+            if nr >= 0 && nr < self.size as i32 && nc >= 0 && nc < self.size as i32 {
+                let neighbor_idx = self.pos_to_idx(nr as usize, nc as usize);
+                new_states[neighbor_idx] = CellState::Blocked;
+            }
+        }
+
+        // block color region
+        let color = self.color_at_idx(idx);
+        let color_mask = self.color_mask(color);
+        for i in 0..new_states.len() {
+            if color_mask[i] {
+                new_states[i] = CellState::Blocked;
+            }
+        }
+
+        // place queen
+        new_states[idx] = CellState::Queen;
+        new_colors_with_queens[color] = true;
+
+        GameState {
+            size: self.size,
+            states: new_states,
+            colors_with_queens: new_colors_with_queens,
+            colors: Rc::clone(&self.colors),
+            color_masks: Rc::clone(&self.color_masks),
+            heuristic: self.heuristic,
+        }
     }
 }
 
@@ -80,7 +154,7 @@ impl Hash for GameState {
 
 impl PartialEq for GameState {
     fn eq(&self, other: &Self) -> bool {
-        self.size == other.size && self.states == other.states
+        self.states == other.states
     }
 }
 
