@@ -4,7 +4,10 @@ use std::{
     rc::Rc,
 };
 
-use crate::{CellState, heuristic::HeuristicFn};
+use crate::{
+    CellState,
+    heuristic::{HeuristicContext, HeuristicFn},
+};
 
 const NEIGHBOR_DISPLACEMENTS: [(i32, i32); 8] = [
     (-1, -1),
@@ -24,7 +27,7 @@ pub struct GameState {
     colors_with_queens: Vec<bool>,
 
     // immutable once initialized
-    colors: Rc<[u8]>,
+    pub colors: Rc<[u8]>,
     color_masks: Rc<[Rc<[bool]>]>,
 
     heuristic: Option<HeuristicFn>,
@@ -46,7 +49,7 @@ impl GameState {
 
     #[inline]
     pub fn is_goal_state(&self) -> bool {
-        self.colors_with_queens.len() == self.size
+        self.colors_with_queens.iter().filter(|&&b| b).count() == self.size
     }
 
     #[inline]
@@ -59,7 +62,10 @@ impl GameState {
         &self.color_masks[color]
     }
 
-    pub fn from_color_regions(color_regions: Vec<Vec<u8>>, heuristic: Option<HeuristicFn>) -> Self {
+    pub fn from_color_regions(
+        color_regions: Vec<Vec<u8>>,
+        heuristic: Option<HeuristicFn>,
+    ) -> Result<Self, String> {
         let size = color_regions.len();
         let total_cells = size * size;
 
@@ -71,7 +77,27 @@ impl GameState {
         for &color in &colors {
             unique_colors.insert(color);
         }
-        let unique_colors: Vec<u8> = unique_colors.into_iter().collect();
+        let mut unique_colors: Vec<u8> = unique_colors.into_iter().collect();
+
+        // ensure colors start from 0
+        unique_colors.sort_unstable();
+        if unique_colors.first() != Some(&0) {
+            return Err(format!(
+                "Colors must start from 0, found {}",
+                unique_colors.first().unwrap_or(&u8::MAX)
+            ));
+        }
+
+        // check for continuous values
+        for i in 1..unique_colors.len() {
+            if unique_colors[i] != unique_colors[i - 1] + 1 {
+                return Err(format!(
+                    "Colors are not continuous: found {} after {}",
+                    unique_colors[i],
+                    unique_colors[i - 1]
+                ));
+            }
+        }
 
         let colors_masks: Vec<Rc<[bool]>> = unique_colors
             .iter()
@@ -86,14 +112,14 @@ impl GameState {
 
         let colors: Rc<[u8]> = Rc::from(colors);
 
-        GameState {
+        Ok(GameState {
             size,
             states,
             colors_with_queens,
             color_masks,
             colors,
             heuristic,
-        }
+        })
     }
 
     pub fn place_queen(&self, r: usize, c: usize) -> Self {
@@ -143,6 +169,106 @@ impl GameState {
             color_masks: Rc::clone(&self.color_masks),
             heuristic: self.heuristic,
         }
+    }
+
+    fn can_place_queen(&self, r: usize, c: usize) -> bool {
+        let idx = self.pos_to_idx(r, c);
+
+        if self.states[idx] != CellState::Empty {
+            return false;
+        }
+
+        // color already has a queen
+        let queen_color = self.color_at_idx(idx);
+        if self.colors_with_queens[queen_color] {
+            return false;
+        }
+
+        // 1-step lookahead: make sure this move doesn't block entirety of another region
+        let mut will_be_blocked = vec![false; self.size * self.size];
+
+        // block row and col
+        for i in 0..self.size {
+            will_be_blocked[self.pos_to_idx(r, i)] = true;
+            will_be_blocked[self.pos_to_idx(i, c)] = true;
+        }
+
+        // block neighbors
+        for (dr, dc) in NEIGHBOR_DISPLACEMENTS {
+            let nr = r as i32 + dr;
+            let nc = c as i32 + dc;
+
+            if nr >= 0 && nr < self.size as i32 && nc >= 0 && nc < self.size as i32 {
+                let neighbor_idx = self.pos_to_idx(nr as usize, nc as usize);
+                will_be_blocked[neighbor_idx] = true;
+            }
+        }
+
+        // block color region
+        let color_mask = self.color_mask(queen_color);
+        for idx in 0..will_be_blocked.len() {
+            if color_mask[idx] {
+                will_be_blocked[idx] = true;
+            }
+        }
+
+        // all other regions must have at least one valid empty cell OR a queen placed already
+        for color in 0..self.size {
+            // checking own color / color already has a queen
+            if color == queen_color || self.colors_with_queens[color] {
+                continue;
+            }
+
+            let mut region_has_valid_empty = false;
+            let color_mask = self.color_mask(color);
+
+            for idx in 0..self.states.len() {
+                if self.states[idx] == CellState::Empty && color_mask[idx] && !will_be_blocked[idx]
+                {
+                    region_has_valid_empty = true;
+                    break;
+                }
+            }
+
+            if !region_has_valid_empty {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub fn get_valid_placements(&self) -> Vec<(usize, usize)> {
+        let valid_placements: Vec<(usize, usize)> = (0..self.size)
+            .flat_map(|r| (0..self.size).map(move |c| (r, c)))
+            .filter(|&(r, c)| self.can_place_queen(r, c))
+            .collect();
+
+        if let Some(heuristic_fn) = self.heuristic {
+            let ctx = HeuristicContext {
+                positions: &valid_placements,
+                size: self.size,
+                states: &self.states,
+                colors_with_queens: &self.colors_with_queens,
+                colors: &self.colors,
+                color_masks: &self.color_masks,
+            };
+            let heuristic_values = heuristic_fn(&ctx);
+
+            let mut paired: Vec<((usize, usize), f32)> = valid_placements
+                .into_iter()
+                .zip(heuristic_values.into_iter())
+                .collect();
+
+            // sort by heuristic in ascending order
+            paired.sort_unstable_by(|a, b| {
+                a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
+            });
+
+            return paired.into_iter().map(|(pos, _)| pos).collect();
+        }
+
+        valid_placements
     }
 }
 
