@@ -1,7 +1,7 @@
 use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
-use queen_sweep_core::{GameState, depth_first_search, heuristic::smallest_region_first};
+use queen_sweep_core::{GameState, depth_first_search, heuristic::*};
 
 #[wasm_bindgen]
 pub struct QueensGame(GameState);
@@ -12,7 +12,7 @@ impl QueensGame {
     pub fn from_color_regions(color_regions: Vec<Uint8Array>) -> Result<QueensGame, JsValue> {
         let regions: Vec<Vec<u8>> = color_regions.iter().map(|arr| arr.to_vec()).collect();
 
-        let inner = GameState::from_color_regions(regions, Some(smallest_region_first))
+        let inner = GameState::from_color_regions(regions, Some(smallest_region_by_empty_cells))
             .map_err(|e| JsError::new(&e.to_string()))?;
 
         Ok(QueensGame(inner))

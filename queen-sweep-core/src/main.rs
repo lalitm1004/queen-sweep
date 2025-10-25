@@ -1,8 +1,6 @@
 use std::time::Instant;
 
-use queen_sweep_core::{
-    GameState, GameStateError, depth_first_search, heuristic::smallest_region_first,
-};
+use queen_sweep_core::{GameState, GameStateError, depth_first_search, heuristic::*};
 
 mod display;
 use display::pretty_print;
@@ -21,7 +19,8 @@ fn main() {
 fn run() -> Result<(), GameStateError> {
     let color_regions = puzzle_11x11();
 
-    let state = GameState::from_color_regions(color_regions, Some(smallest_region_first))?;
+    let state = GameState::from_color_regions(color_regions, Some(smallest_region_by_empty_cells))?;
+    // let state = GameState::from_color_regions(color_regions, None)?;
 
     println!("Initial state:");
     pretty_print(&state);

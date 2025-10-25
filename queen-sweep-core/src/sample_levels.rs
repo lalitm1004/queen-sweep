@@ -1,4 +1,11 @@
-// 11x11 puzzle
+/**
+ * 11x11 puzzle
+ * States Visited:
+ *  - no_heuristic: 9279052
+ *  - smallest_region_first: 990631
+ *  - smallest_region_by_empty_cells: 984845
+ *  - critical_empty_cell_first: 6300409
+ */
 pub fn puzzle_11x11() -> Vec<Vec<u8>> {
     vec![
         vec![0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2],

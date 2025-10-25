@@ -4,17 +4,17 @@ use crate::GameState;
 
 pub fn depth_first_search(game_state: GameState) -> (Option<GameState>, usize) {
     let mut seen = HashSet::new();
-    let mut steps = 0;
-    let solution = dfs_helper(game_state, &mut seen, &mut steps);
-    (solution, steps)
+    let mut states_visited = 0;
+    let solution = dfs_helper_with_counter(game_state, &mut seen, &mut states_visited);
+    (solution, states_visited)
 }
 
-fn dfs_helper(
+fn dfs_helper_with_counter(
     game_state: GameState,
     seen: &mut HashSet<GameState>,
-    steps: &mut usize,
+    states_visited: &mut usize,
 ) -> Option<GameState> {
-    *steps += 1;
+    *states_visited += 1;
 
     if seen.contains(&game_state) {
         return None;
@@ -28,7 +28,7 @@ fn dfs_helper(
 
     for (r, c) in game_state.get_valid_placements() {
         let new_state = game_state.place_queen(r, c);
-        if let Some(solution) = dfs_helper(new_state, seen, steps) {
+        if let Some(solution) = dfs_helper_with_counter(new_state, seen, states_visited) {
             return Some(solution);
         }
     }
