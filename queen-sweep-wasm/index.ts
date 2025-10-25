@@ -1,4 +1,4 @@
-import { GameStateWasm } from './pkg/queen_sweep_wasm.js';
+import { QueensGame } from './pkg/queen_sweep_wasm.js';
 
 function main() {
     const colorRegions = [
@@ -16,17 +16,20 @@ function main() {
     ];
 
     const colorRegionsUint8 = colorRegions.map(row => new Uint8Array(row));
-    const game = new GameStateWasm(colorRegionsUint8);
 
-    console.log("Original board:", game.get_states_2d());
+    try {
+        const game = new QueensGame(colorRegionsUint8);
 
-    const solved = game.solve();
+        const solved = game.solve();
 
-    if (solved) {
-        console.log("Solved board:", solved.get_states_2d());
-        console.log("Queen positions:", solved.get_queen_positions());
-    } else {
-        console.log("No solution found");
+        if (solved) {
+            console.log("Solution Found:")
+            console.log("Queen positions:", solved.get_queen_positions());
+        } else {
+            console.log("No solution found");
+        }
+    } catch (e) {
+        console.error('Could not initialize Game:', e);
     }
 }
 

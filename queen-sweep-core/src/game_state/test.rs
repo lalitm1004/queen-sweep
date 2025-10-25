@@ -11,7 +11,8 @@ fn get_initial_game_state() -> GameState {
         vec![7, 3, 7, 3, 1, 5, 5, 6],
         vec![7, 7, 7, 7, 6, 6, 6, 6],
     ];
-    GameState::from_color_regions(color_regions)
+    GameState::from_color_regions(color_regions, None)
+        .expect("should be able to initialize game state")
 }
 
 #[test]
