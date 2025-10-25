@@ -7,4 +7,4 @@ pub mod heuristic;
 
 pub use cell_state::CellState;
 pub use dfs::depth_first_search;
-pub use game_state::GameState;
+pub use game_state::{GameState, GameStateError};

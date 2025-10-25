@@ -1,3 +1,6 @@
+mod errors;
+pub use errors::GameStateError;
+
 use std::{
     collections::HashSet,
     hash::{Hash, Hasher},
@@ -19,6 +22,7 @@ const NEIGHBOR_DISPLACEMENTS: [(i32, i32); 8] = [
     (1, 0),
     (1, 1),
 ];
+const MAX_BOARD_SIZE: usize = 255;
 
 #[derive(Debug, Clone)]
 pub struct GameState {
@@ -65,51 +69,81 @@ impl GameState {
     pub fn from_color_regions(
         color_regions: Vec<Vec<u8>>,
         heuristic: Option<HeuristicFn>,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, GameStateError> {
         let size = color_regions.len();
-        let total_cells = size * size;
 
+        if size == 0 {
+            return Err(GameStateError::InvalidBoardSize(size));
+        }
+
+        if size > MAX_BOARD_SIZE {
+            return Err(GameStateError::BoardTooLarge {
+                size,
+                max_size: MAX_BOARD_SIZE,
+            });
+        }
+
+        // validate square board
+        for row in color_regions.iter() {
+            if row.len() != size {
+                return Err(GameStateError::NonSquareBoard {
+                    rows: size,
+                    cols: row.len(),
+                });
+            }
+        }
+
+        let total_cells = size * size;
         let states = vec![CellState::Empty; total_cells];
 
         let colors: Vec<u8> = color_regions.into_iter().flatten().collect();
 
+        // verify cell count
+        if colors.len() != total_cells {
+            return Err(GameStateError::InvalidCellCount {
+                expected: total_cells,
+                found: colors.len(),
+            });
+        }
+
+        // collect unique colors
         let mut unique_colors = HashSet::with_capacity(size);
         for &color in &colors {
             unique_colors.insert(color);
         }
         let mut unique_colors: Vec<u8> = unique_colors.into_iter().collect();
+        unique_colors.sort_unstable();
 
         // ensure colors start from 0
-        unique_colors.sort_unstable();
-        if unique_colors.first() != Some(&0) {
-            return Err(format!(
-                "Colors must start from 0, found {}",
-                unique_colors.first().unwrap_or(&u8::MAX)
-            ));
+        if let Some(&first_color) = unique_colors.first() {
+            if first_color != 0 {
+                return Err(GameStateError::ColorsNotStartingFromZero { first_color });
+            }
         }
 
         // check for continuous values
         for i in 1..unique_colors.len() {
             if unique_colors[i] != unique_colors[i - 1] + 1 {
-                return Err(format!(
-                    "Colors are not continuous: found {} after {}",
-                    unique_colors[i],
-                    unique_colors[i - 1]
-                ));
+                return Err(GameStateError::NonContinuousColors {
+                    expected: unique_colors[i - 1] + 1,
+                    found: unique_colors[i],
+                });
             }
         }
 
+        // build color masks
         let colors_masks: Vec<Rc<[bool]>> = unique_colors
             .iter()
             .map(|&color| {
                 let mask: Vec<bool> = colors.iter().map(|&c| c == color).collect();
-                Rc::from(mask.into_boxed_slice())
+
+                Ok(Rc::from(mask.into_boxed_slice()))
             })
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
+
         let color_masks: Rc<[Rc<[bool]>]> = Rc::from(colors_masks.into_boxed_slice());
 
         let colors_with_queens = vec![false; size];
-
         let colors: Rc<[u8]> = Rc::from(colors);
 
         Ok(GameState {
@@ -269,6 +303,21 @@ impl GameState {
         }
 
         valid_placements
+    }
+
+    pub fn get_queen_positions(&self) -> Vec<(usize, usize)> {
+        self.states
+            .iter()
+            .enumerate()
+            .filter_map(|(i, state)| {
+                if *state == CellState::Queen {
+                    let (r, c) = self.idx_to_pos(i);
+                    Some((r, c))
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 }
 
