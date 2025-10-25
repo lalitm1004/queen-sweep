@@ -52,7 +52,7 @@ fn print_statistics(steps: usize, duration: std::time::Duration) {
 
     println!("Statistics:");
     println!("  Steps explored: {}", steps);
-    println!("  Time taken: {:.6} ms", millis);
+    println!("  Time taken: {:.6} ms, {:.6} s", millis, millis / 1000.00);
 
     if millis > 0.0 {
         let steps_per_ms = steps as f64 / millis;
