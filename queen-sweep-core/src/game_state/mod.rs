@@ -176,6 +176,7 @@ impl GameState {
         scored.into_iter().map(|(pos, _)| pos).collect()
     }
 
+    #[inline]
     pub fn queen_positions(&self) -> impl Iterator<Item = (usize, usize)> {
         self.states.iter().enumerate().filter_map(|(i, state)| {
             if *state == CellState::Queen {

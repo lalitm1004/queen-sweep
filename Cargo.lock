@@ -49,14 +49,13 @@ dependencies = [
 name = "queen-sweep-core"
 version = "0.1.0"
 dependencies = [
- "queen-sweep-heuristic-macros",
+ "queen-sweep-macros",
 ]
 
 [[package]]
-name = "queen-sweep-heuristic-macros"
+name = "queen-sweep-macros"
 version = "0.1.0"
 dependencies = [
- "proc-macro2",
  "quote",
  "syn",
 ]

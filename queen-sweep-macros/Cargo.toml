@@ -1,5 +1,5 @@
 [package]
-name = "queen-sweep-heuristic-macros"
+name = "queen-sweep-macros"
 version = "0.1.0"
 edition = "2024"
 
@@ -9,4 +9,3 @@ proc-macro = true
 [dependencies]
 syn = { version = "2.0", features = ["full"] }
 quote = "1"
-proc-macro2 = "1"

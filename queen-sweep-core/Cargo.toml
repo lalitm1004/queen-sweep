@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-queen-sweep-heuristic-macros = { path = "../queen-sweep-heuristic-macros" }
+queen-sweep-macros = { path = "../queen-sweep-macros" }

@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::CellState;
-use queen_sweep_heuristic_macros::heuristic;
+use queen_sweep_macros::heuristic;
 
 pub struct HeuristicContext<'a> {
     pub positions: &'a [(usize, usize)],

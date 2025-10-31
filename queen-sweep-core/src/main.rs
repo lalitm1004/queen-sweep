@@ -38,7 +38,6 @@ fn run() -> Result<(), GameStateError> {
         None => {
             println!("✗ No solution exists");
             println!();
-            println!("{}", "=".repeat(50));
         }
     }
 
