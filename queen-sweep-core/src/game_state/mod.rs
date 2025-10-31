@@ -2,7 +2,7 @@ mod errors;
 pub use errors::GameStateError;
 
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet, hash_map::DefaultHasher},
     hash::{Hash, Hasher},
     rc::Rc,
 };
@@ -22,7 +22,7 @@ const NEIGHBOR_DISPLACEMENTS: [(i32, i32); 8] = [
     (1, 0),
     (1, 1),
 ];
-const MAX_BOARD_SIZE: usize = 255;
+const MAX_BOARD_SIZE: usize = u8::MAX as usize;
 
 #[derive(Debug, Clone)]
 pub struct GameState {
@@ -35,6 +35,8 @@ pub struct GameState {
     color_masks: Rc<[Rc<[bool]>]>,
 
     heuristic: Option<HeuristicFn>,
+
+    hash: u64,
 }
 
 impl GameState {
@@ -45,10 +47,7 @@ impl GameState {
 
     #[inline]
     pub fn idx_to_pos(&self, idx: usize) -> (usize, usize) {
-        let r = idx / self.size;
-        let c = idx % self.size;
-
-        (r, c)
+        (idx / self.size, idx % self.size)
     }
 
     #[inline]
@@ -57,103 +56,27 @@ impl GameState {
     }
 
     #[inline]
-    pub fn color_at_idx(&self, idx: usize) -> usize {
-        self.colors[idx] as usize
+    pub fn color_at_idx(&self, idx: usize) -> u8 {
+        self.colors[idx] as u8
     }
 
     #[inline]
-    pub fn color_mask(&self, color: usize) -> &[bool] {
-        &self.color_masks[color]
+    fn get_color_mask(&self, color: u8) -> &[bool] {
+        &self.color_masks[color as usize]
+    }
+
+    #[inline]
+    fn in_bounds(&self, r: i32, c: i32) -> bool {
+        r >= 0 && c >= 0 && r < self.size as i32 && c < self.size as i32
     }
 
     pub fn from_color_regions(
         color_regions: Vec<Vec<u8>>,
         heuristic: Option<HeuristicFn>,
     ) -> Result<Self, GameStateError> {
-        let size = color_regions.len();
-
-        if size == 0 {
-            return Err(GameStateError::InvalidBoardSize(size));
-        }
-
-        if size > MAX_BOARD_SIZE {
-            return Err(GameStateError::BoardTooLarge {
-                size,
-                max_size: MAX_BOARD_SIZE,
-            });
-        }
-
-        // validate square board
-        for row in color_regions.iter() {
-            if row.len() != size {
-                return Err(GameStateError::NonSquareBoard {
-                    rows: size,
-                    cols: row.len(),
-                });
-            }
-        }
-
-        let total_cells = size * size;
-        let states = vec![CellState::Empty; total_cells];
-
-        let colors: Vec<u8> = color_regions.into_iter().flatten().collect();
-
-        // verify cell count
-        if colors.len() != total_cells {
-            return Err(GameStateError::InvalidCellCount {
-                expected: total_cells,
-                found: colors.len(),
-            });
-        }
-
-        // collect unique colors
-        let mut unique_colors = HashSet::with_capacity(size);
-        for &color in &colors {
-            unique_colors.insert(color);
-        }
-        let mut unique_colors: Vec<u8> = unique_colors.into_iter().collect();
-        unique_colors.sort_unstable();
-
-        // ensure colors start from 0
-        if let Some(&first_color) = unique_colors.first() {
-            if first_color != 0 {
-                return Err(GameStateError::ColorsNotStartingFromZero { first_color });
-            }
-        }
-
-        // check for continuous values
-        for i in 1..unique_colors.len() {
-            if unique_colors[i] != unique_colors[i - 1] + 1 {
-                return Err(GameStateError::NonContinuousColors {
-                    expected: unique_colors[i - 1] + 1,
-                    found: unique_colors[i],
-                });
-            }
-        }
-
-        // build color masks
-        let colors_masks: Vec<Rc<[bool]>> = unique_colors
-            .iter()
-            .map(|&color| {
-                let mask: Vec<bool> = colors.iter().map(|&c| c == color).collect();
-
-                Ok(Rc::from(mask.into_boxed_slice()))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let color_masks: Rc<[Rc<[bool]>]> = Rc::from(colors_masks.into_boxed_slice());
-
-        let colors_with_queens = vec![false; size];
-        let colors: Rc<[u8]> = Rc::from(colors);
-
-        Ok(GameState {
-            size,
-            states,
-            colors_with_queens,
-            color_masks,
-            colors,
-            heuristic,
-        })
+        let mut base = GameState::try_from(color_regions)?;
+        base.heuristic = heuristic;
+        Ok(base)
     }
 
     pub fn place_queen(&self, r: usize, c: usize) -> Self {
@@ -184,7 +107,7 @@ impl GameState {
 
         // block color region
         let color = self.color_at_idx(idx);
-        let color_mask = self.color_mask(color);
+        let color_mask = self.get_color_mask(color);
         for i in 0..new_states.len() {
             if color_mask[i] {
                 new_states[i] = CellState::Blocked;
@@ -193,7 +116,19 @@ impl GameState {
 
         // place queen
         new_states[idx] = CellState::Queen;
-        new_colors_with_queens[color] = true;
+        new_colors_with_queens[color as usize] = true;
+
+        // block all invalid moves
+        for idx in 0..new_states.len() {
+            if new_states[idx] == CellState::Empty {
+                let (r, c) = self.idx_to_pos(idx);
+                if !self.can_place_queen(&new_states, &new_colors_with_queens, r, c) {
+                    new_states[idx] = CellState::Blocked;
+                }
+            }
+        }
+
+        let hash = compute_hash(&new_states);
 
         GameState {
             size: self.size,
@@ -202,23 +137,76 @@ impl GameState {
             colors: Rc::clone(&self.colors),
             color_masks: Rc::clone(&self.color_masks),
             heuristic: self.heuristic,
+            hash,
         }
     }
 
-    fn can_place_queen(&self, r: usize, c: usize) -> bool {
+    pub fn get_valid_placements(&self) -> Vec<(usize, usize)> {
+        let positions: Vec<(usize, usize)> = self
+            .states
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, state)| {
+                if *state == CellState::Empty {
+                    Some(self.idx_to_pos(idx))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let heuristic_fn = match self.heuristic {
+            Some(f) => f,
+            None => return positions,
+        };
+
+        let ctx = HeuristicContext {
+            positions: &positions,
+            size: self.size,
+            states: &self.states,
+            colors_with_queens: &self.colors_with_queens,
+            colors: &self.colors,
+            color_masks: &self.color_masks,
+        };
+
+        let mut scored = heuristic_fn(&ctx);
+
+        scored.sort_unstable_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        scored.into_iter().map(|(pos, _)| pos).collect()
+    }
+
+    pub fn get_queen_positions(&self) -> impl Iterator<Item = (usize, usize)> {
+        self.states.iter().enumerate().filter_map(|(i, state)| {
+            if *state == CellState::Queen {
+                let (r, c) = self.idx_to_pos(i);
+                Some((r, c))
+            } else {
+                None
+            }
+        })
+    }
+
+    fn can_place_queen(
+        &self,
+        states: &[CellState],
+        colors_with_queens: &[bool],
+        r: usize,
+        c: usize,
+    ) -> bool {
         let idx = self.pos_to_idx(r, c);
 
-        if self.states[idx] != CellState::Empty {
+        if states[idx] != CellState::Empty {
             return false;
         }
 
-        // color already has a queen
+        // check if color already has a queen
         let queen_color = self.color_at_idx(idx);
-        if self.colors_with_queens[queen_color] {
+        if colors_with_queens[queen_color as usize] {
             return false;
         }
 
-        // 1-step lookahead: make sure this move doesn't block entirety of another region
+        // 1-step lookahead
         let mut will_be_blocked = vec![false; self.size * self.size];
 
         // block row and col
@@ -232,14 +220,14 @@ impl GameState {
             let nr = r as i32 + dr;
             let nc = c as i32 + dc;
 
-            if nr >= 0 && nr < self.size as i32 && nc >= 0 && nc < self.size as i32 {
+            if self.in_bounds(nr, nc) {
                 let neighbor_idx = self.pos_to_idx(nr as usize, nc as usize);
                 will_be_blocked[neighbor_idx] = true;
             }
         }
 
         // block color region
-        let color_mask = self.color_mask(queen_color);
+        let color_mask = self.get_color_mask(queen_color);
         for idx in 0..will_be_blocked.len() {
             if color_mask[idx] {
                 will_be_blocked[idx] = true;
@@ -248,17 +236,16 @@ impl GameState {
 
         // all other regions must have at least one valid empty cell OR a queen placed already
         for color in 0..self.size {
-            // checking own color / color already has a queen
-            if color == queen_color || self.colors_with_queens[color] {
+            // skip own color and colors that already have queens
+            if color == queen_color as usize || colors_with_queens[color] {
                 continue;
             }
 
             let mut region_has_valid_empty = false;
-            let color_mask = self.color_mask(color);
+            let color_mask = self.get_color_mask(color as u8);
 
-            for idx in 0..self.states.len() {
-                if self.states[idx] == CellState::Empty && color_mask[idx] && !will_be_blocked[idx]
-                {
+            for idx in 0..states.len() {
+                if states[idx] == CellState::Empty && color_mask[idx] && !will_be_blocked[idx] {
                     region_has_valid_empty = true;
                     break;
                 }
@@ -271,69 +258,130 @@ impl GameState {
 
         true
     }
+}
 
-    pub fn get_valid_placements(&self) -> Vec<(usize, usize)> {
-        let valid_placements: Vec<(usize, usize)> = (0..self.size)
-            .flat_map(|r| (0..self.size).map(move |c| (r, c)))
-            .filter(|&(r, c)| self.can_place_queen(r, c))
-            .collect();
+impl TryFrom<Vec<Vec<u8>>> for GameState {
+    type Error = GameStateError;
 
-        if let Some(heuristic_fn) = self.heuristic {
-            let ctx = HeuristicContext {
-                positions: &valid_placements,
-                size: self.size,
-                states: &self.states,
-                colors_with_queens: &self.colors_with_queens,
-                colors: &self.colors,
-                color_masks: &self.color_masks,
-            };
-            let heuristic_values = heuristic_fn(&ctx);
+    fn try_from(color_regions: Vec<Vec<u8>>) -> Result<Self, Self::Error> {
+        let size = color_regions.len();
 
-            let mut paired: Vec<((usize, usize), f32)> = valid_placements
-                .into_iter()
-                .zip(heuristic_values.into_iter())
-                .collect();
-
-            // sort by heuristic in ascending order
-            paired.sort_unstable_by(|a, b| {
-                a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal)
-            });
-
-            return paired.into_iter().map(|(pos, _)| pos).collect();
+        if size == 0 {
+            return Err(GameStateError::InexistentBoard);
         }
 
-        valid_placements
-    }
+        if size > MAX_BOARD_SIZE {
+            return Err(GameStateError::BoardTooLarge {
+                size,
+                max_size: MAX_BOARD_SIZE,
+            });
+        }
 
-    pub fn get_queen_positions(&self) -> Vec<(usize, usize)> {
-        self.states
+        // validate square board
+        for row in color_regions.iter() {
+            if row.len() != size {
+                return Err(GameStateError::NonSquareBoard {
+                    rows: size,
+                    cols: row.len(),
+                });
+            }
+        }
+
+        // normalize board to be continous from 0
+        let color_regions = normalize_colors(color_regions);
+
+        let total_cells = size * size;
+        let states = vec![CellState::Empty; total_cells];
+        let hash = compute_hash(&states);
+
+        let colors: Vec<u8> = color_regions.into_iter().flatten().collect();
+        if colors.len() != total_cells {
+            return Err(GameStateError::InvalidCellCount {
+                expected: total_cells,
+                found: colors.len(),
+            });
+        }
+
+        // collect unique colors
+        let mut unique_colors = HashSet::with_capacity(size);
+        for &color in &colors {
+            unique_colors.insert(color);
+        }
+        let mut unique_colors: Vec<u8> = unique_colors.into_iter().collect();
+        unique_colors.sort_unstable();
+
+        // build color masks
+        let colors_masks: Vec<Rc<[bool]>> = unique_colors
             .iter()
-            .enumerate()
-            .filter_map(|(i, state)| {
-                if *state == CellState::Queen {
-                    let (r, c) = self.idx_to_pos(i);
-                    Some((r, c))
-                } else {
-                    None
-                }
+            .map(|&color| {
+                let mask: Vec<bool> = colors.iter().map(|&c| c == color).collect();
+                Rc::from(mask.into_boxed_slice())
             })
-            .collect()
+            .collect();
+
+        let color_masks: Rc<[Rc<[bool]>]> = Rc::from(colors_masks.into_boxed_slice());
+        let colors_with_queens = vec![false; size];
+        let colors: Rc<[u8]> = Rc::from(colors);
+
+        Ok(GameState {
+            size,
+            states,
+            colors_with_queens,
+            color_masks,
+            colors,
+            heuristic: None,
+            hash,
+        })
     }
+}
+
+fn normalize_colors(color_regions: Vec<Vec<u8>>) -> Vec<Vec<u8>> {
+    let mut unique_colors: Vec<u8> = color_regions
+        .iter()
+        .flat_map(|row| row.iter().copied())
+        .collect::<std::collections::HashSet<_>>()
+        .into_iter()
+        .collect();
+
+    unique_colors.sort_unstable();
+
+    let color_map: HashMap<u8, u8> = unique_colors
+        .into_iter()
+        .enumerate()
+        .map(|(new_color, old_color)| (old_color, new_color as u8))
+        .collect();
+
+    color_regions
+        .into_iter()
+        .map(|row| {
+            row.into_iter()
+                .map(|color| *color_map.get(&color).unwrap_or(&0))
+                .collect()
+        })
+        .collect()
 }
 
 impl Hash for GameState {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.states.hash(state);
+    #[inline]
+    fn hash<H: Hasher>(&self, hash_state: &mut H) {
+        // use precomputed hash
+        hash_state.write_u64(self.hash);
     }
 }
 
+fn compute_hash(states: &[CellState]) -> u64 {
+    // only states change over the course of a dfs
+    // all other attributes are either static or derived from states
+    let mut hasher = DefaultHasher::new();
+    states.hash(&mut hasher);
+    hasher.finish()
+}
+
 impl PartialEq for GameState {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.states == other.states
+        self.hash == other.hash && self.states == other.states
     }
 }
 
 impl Eq for GameState {}
-
-#[cfg(test)]
-mod test;

@@ -1,3 +1,7 @@
 [workspace]
-members = ["queen-sweep-core", "queen-sweep-wasm"]
+members = [
+    "queen-sweep-core",
+    "queen-sweep-heuristic-macros",
+    "queen-sweep-wasm",
+]
 resolver = "3"
