@@ -26,7 +26,7 @@ fn dfs_helper_with_counter(
         return Some(game_state);
     }
 
-    for (r, c) in game_state.get_valid_placements() {
+    for (r, c) in game_state.valid_placements() {
         let new_state = game_state.place_queen(r, c);
         if let Some(solution) = dfs_helper_with_counter(new_state, seen, states_visited) {
             return Some(solution);

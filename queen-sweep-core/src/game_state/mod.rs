@@ -141,7 +141,7 @@ impl GameState {
         }
     }
 
-    pub fn get_valid_placements(&self) -> Vec<(usize, usize)> {
+    pub fn valid_placements(&self) -> Vec<(usize, usize)> {
         let positions: Vec<(usize, usize)> = self
             .states
             .iter()
@@ -176,7 +176,7 @@ impl GameState {
         scored.into_iter().map(|(pos, _)| pos).collect()
     }
 
-    pub fn get_queen_positions(&self) -> impl Iterator<Item = (usize, usize)> {
+    pub fn queen_positions(&self) -> impl Iterator<Item = (usize, usize)> {
         self.states.iter().enumerate().filter_map(|(i, state)| {
             if *state == CellState::Queen {
                 let (r, c) = self.idx_to_pos(i);

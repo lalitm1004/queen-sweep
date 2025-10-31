@@ -26,7 +26,7 @@ impl QueensGame {
 
     #[wasm_bindgen]
     pub fn get_queen_positions(&self) -> Vec<Uint8Array> {
-        let positions = self.0.get_queen_positions();
+        let positions = self.0.queen_positions();
 
         positions
             .into_iter()
