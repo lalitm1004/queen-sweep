@@ -1,0 +1,27 @@
+{
+    "manifest_version": 3,
+    "name": "QueenSweep",
+    "description": "Solve QueensGame",
+    "version": "0.1.0",
+    "host_permissions": [
+        "https://lm04.me/*"
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+    },
+    "background": {
+        "service_worker": "service-worker.js",
+        "type": "module"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://lm04.me/*"
+            ],
+            "js": [
+                "content-script.js"
+            ],
+            "runs_at": "document_idle"
+        }
+    ]
+}

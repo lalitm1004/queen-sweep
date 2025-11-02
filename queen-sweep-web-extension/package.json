@@ -1,0 +1,20 @@
+{
+  "name": "queen-sweep-web-extension",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "wasm:build": "wasm-pack build ../queen-sweep-wasm --release --target web --out-dir ../queen-sweep-web-extension/src/wasm",
+    "build": "vite build",
+    "copy": "rm -rf /mnt/d/devEnv/extension/* && cp -r dist/* /mnt/d/devEnv/extension/"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.27",
+    "@types/node": "^24.9.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vite-plugin-static-copy": "^3.1.4",
+    "vite-plugin-top-level-await": "^1.6.0",
+    "vite-plugin-wasm": "^3.5.0"
+  }
+}
