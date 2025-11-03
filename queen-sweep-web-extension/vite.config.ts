@@ -16,6 +16,7 @@ export default defineConfig({
                 { src: 'src/manifest.json', dest: '.' },
                 { src: 'src/wasm/*.js', dest: 'wasm' },
                 { src: 'src/assets/*.png', dest: 'assets' },
+                { src: 'src/assets/*.svg', dest: 'assets' },
             ],
         }),
     ],
