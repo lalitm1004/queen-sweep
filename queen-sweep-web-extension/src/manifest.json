@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "QueenSweep",
-    "description": "Solve QueensGame",
+    "description": "Solve LinkedIn Queens",
     "version": "0.1.0",
     "host_permissions": [
         "https://lm04.me/*"
@@ -10,7 +10,7 @@
         "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
     },
     "background": {
-        "service_worker": "service-worker.js",
+        "service_worker": "scripts/service-worker.js",
         "type": "module"
     },
     "content_scripts": [
@@ -19,9 +19,23 @@
                 "https://lm04.me/*"
             ],
             "js": [
-                "content-script.js"
+                "scripts/content-script.js"
             ],
             "runs_at": "document_idle"
         }
-    ]
+    ],
+    "icons": {
+        "16": "assets/icon_16.png",
+        "32": "assets/icon_32.png",
+        "48": "assets/icon_48.png",
+        "128": "assets/icon_128.png"
+    },
+    "action": {
+        "default_popup": "popup/index.html",
+        "default_title": "QueenSweep",
+        "default_icon": {
+            "16": "assets/icon_16.png",
+            "32": "assets/icon_32.png"
+        }
+    }
 }

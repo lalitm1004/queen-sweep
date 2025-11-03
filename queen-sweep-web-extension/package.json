@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "wasm:build": "wasm-pack build ../queen-sweep-wasm --release --target web --out-dir ../queen-sweep-web-extension/src/wasm",
-    "build": "vite build",
+    "build": "vite build && node move-html.js",
     "copy": "rm -rf /mnt/d/devEnv/extension/* && cp -r dist/* /mnt/d/devEnv/extension/"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.16",
     "@types/chrome": "^0.1.27",
     "@types/node": "^24.9.2",
+    "tailwindcss": "^4.1.16",
     "typescript": "^5.9.3",
     "vite": "^7.1.12",
     "vite-plugin-static-copy": "^3.1.4",

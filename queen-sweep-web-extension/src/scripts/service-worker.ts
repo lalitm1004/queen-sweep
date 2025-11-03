@@ -1,4 +1,4 @@
-import init, { QueensGame } from "./wasm/queen_sweep_wasm.js";
+import init, { QueensGame } from "../wasm/queen_sweep_wasm.js";
 import type { SolveRequest, SolveResponse } from "./types/messages.type.js";
 
 
