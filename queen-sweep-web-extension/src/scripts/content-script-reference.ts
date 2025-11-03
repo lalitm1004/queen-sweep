@@ -20,10 +20,14 @@ const extractColorRegions = (): number[][] => {
 }
 
 const main = async () => {
+    console.log('[QueenSweep] Extracting color regions');
     const regions = extractColorRegions();
+
     const result = await sendSolveRequest(regions);
 
-    console.log(result);
+    if (result.success) {
+        console.log(result.queenPositions);
+    }
 }
 
 main();
