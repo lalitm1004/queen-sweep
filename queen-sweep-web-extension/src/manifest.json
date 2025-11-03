@@ -5,9 +5,7 @@
     "version": "0.1.0",
     "host_permissions": [
         "https://lm04.me/*",
-        "https://queensgame.vercel.app/level/*",
-        "https://queensgame.vercel.app/community-level/*",
-        "https://queensgame.vercel.app/bonus-level/*"
+        "https://queensgame.vercel.app/*"
     ],
     "content_security_policy": {
         "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
@@ -24,18 +22,16 @@
             "js": [
                 "scripts/content-script-reference.js"
             ],
-            "runs_at": "document_idle"
+            "runs_at": "document_start"
         },
         {
             "matches": [
-                "https://queensgame.vercel.app/level/*",
-                "https://queensgame.vercel.app/community-level/*",
-                "https://queensgame.vercel.app/bonus-level/*"
+                "https://queensgame.vercel.app/*"
             ],
             "js": [
                 "scripts/content-script-queensgame.js"
             ],
-            "runs_at": "document_start"
+            "runs_at": "document_idle"
         }
     ],
     "icons": {

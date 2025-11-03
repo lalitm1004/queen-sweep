@@ -28,14 +28,13 @@ const extractColorRegions = (): number[][] => {
         const row = parseInt(square.getAttribute('data-row') || '0');
         const col = parseInt(square.getAttribute('data-col') || '0');
 
-        // Extract background color from style
+        // extract background color from style
         const style = square.getAttribute('style') || '';
         const bgColorMatch = style.match(/background-color:\s*rgb\(([^)]+)\)/);
 
         if (bgColorMatch) {
             const color = `rgb(${bgColorMatch[1]})`;
 
-            // Assign color index
             if (!colorMap.has(color)) {
                 colorMap.set(color, colorIndex);
                 colors.push(color);
@@ -56,24 +55,63 @@ const sendSolveRequest = (colorRegions: number[][]): Promise<SolveResponse> => {
     };
 
     return new Promise(resolve => {
-        console.log("[QueenSweep] Sending solve request to service-worker:", msg);
-
-        chrome.runtime.sendMessage(msg, (response: SolveResponse) => {
-            console.log("[QueenSweep] Received solve response from service-worker:", response);
-            resolve(response);
-        });
+        chrome.runtime.sendMessage(msg, (response: SolveResponse) => resolve(response));
     });
 }
 
-const main = async () => {
-    console.log('[QueenSweep] Extracting color regions');
-    const regions = extractColorRegions();
+const solvePuzzle = async (): Promise<void> => {
+    try {
+        console.log('[QueenSweep] Extracting color regions');
+        const regions = extractColorRegions();
 
-    const result = await sendSolveRequest(regions);
+        const result = await sendSolveRequest(regions);
 
-    if (result.success) {
-        console.log(result.queenPositions);
+        if (result.success) {
+            console.log('[QueenSweep] Solution found:', result.queenPositions);
+
+            // TODO: Apply solution to UI
+        } else {
+            console.warn('[QueenSweep] No solution found');
+        }
+    } catch (error) {
+        console.error('[QueenSweep] Error solving puzzle:', error);
     }
-}
+};
+
+const isOnPuzzlePage = (): boolean => {
+    const url = location.href;
+    return url.includes('/level/') ||
+        url.includes('/community-level/') ||
+        url.includes('/bonus-level/');
+};
+
+const setupUrlMonitoring = (): void => {
+    let lastUrl = location.href;
+
+    const checkForUrlChange = () => {
+        const currentUrl = location.href;
+        if (currentUrl !== lastUrl && isOnPuzzlePage()) {
+            solvePuzzle();
+        }
+
+        lastUrl = currentUrl;
+    };
+
+    // monitor DOM changes to detect SPA navigation
+    new MutationObserver(checkForUrlChange).observe(document, {
+        subtree: true,
+        childList: true
+    });
+};
+
+const main = (): void => {
+    console.log('[QueenSweep] Content script initialized');
+
+    setupUrlMonitoring();
+
+    if (isOnPuzzlePage()) {
+        solvePuzzle();
+    }
+};
 
 main();
