@@ -4,7 +4,10 @@
     "description": "Solve LinkedIn Queens",
     "version": "0.1.0",
     "host_permissions": [
-        "https://lm04.me/*"
+        "https://lm04.me/*",
+        "https://queensgame.vercel.app/level/*",
+        "https://queensgame.vercel.app/community-level/*",
+        "https://queensgame.vercel.app/bonus-level/*"
     ],
     "content_security_policy": {
         "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
@@ -32,16 +35,7 @@
             "js": [
                 "scripts/content-script-queensgame.js"
             ],
-            "runs_at": "document_idle"
-        },
-        {
-            "matches": [
-                "https://www.linkedin.com/games/queens/"
-            ],
-            "js": [
-                "scripts/content-script-linkedin.js"
-            ],
-            "runs_at": "document_idle"
+            "runs_at": "document_start"
         }
     ],
     "icons": {

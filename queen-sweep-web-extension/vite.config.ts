@@ -27,7 +27,6 @@ export default defineConfig({
                 'service-worker': 'src/scripts/service-worker.ts',
                 'content-script-reference': 'src/scripts/content-script-reference.ts',
                 'content-script-queensgame': 'src/scripts/content-script-queensgame.ts',
-                'content-script-linkedin': 'src/scripts/content-script-linkedin.ts',
                 popup: resolve(__dirname, 'src/popup/index.html'),
             },
             output: {
