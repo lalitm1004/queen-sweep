@@ -35,9 +35,9 @@ async function main() {
         await moveFile(srcHtml, destHtml);
         await rmIfEmpty(path.join('dist', 'src', 'popup'));
         await rmIfEmpty(path.join('dist', 'src'));
-        console.log('✔ popup/index.html moved successfully');
+        console.log('✓ popup/index.html moved successfully');
     } catch (err) {
-        console.error('✘ Failed to move file:', err);
+        console.error('✗ Failed to move file:', err);
         process.exit(1);
     }
 }

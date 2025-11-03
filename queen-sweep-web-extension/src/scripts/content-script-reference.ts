@@ -1,4 +1,4 @@
-import { SolveRequest, SolveResponse } from "./types/messages.type";
+import sendSolveRequest from "./utils/sendSolveRequest";
 
 const extractColorRegions = (): number[][] => {
     // dummy board to test with
@@ -17,17 +17,6 @@ const extractColorRegions = (): number[][] => {
     ];
 
     return colorRegions;
-}
-
-const sendSolveRequest = (colorRegions: number[][]): Promise<SolveResponse> => {
-    const msg: SolveRequest = {
-        type: 'solve-request',
-        colorRegions
-    };
-
-    return new Promise(resolve => {
-        chrome.runtime.sendMessage(msg, (response: SolveResponse) => resolve(response));
-    });
 }
 
 const main = async () => {

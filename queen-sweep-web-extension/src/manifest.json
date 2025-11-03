@@ -19,7 +19,27 @@
                 "https://lm04.me/*"
             ],
             "js": [
-                "scripts/content-script.js"
+                "scripts/content-script-reference.js"
+            ],
+            "runs_at": "document_idle"
+        },
+        {
+            "matches": [
+                "https://queensgame.vercel.app/level/*",
+                "https://queensgame.vercel.app/community-level/*",
+                "https://queensgame.vercel.app/bonus-level/*"
+            ],
+            "js": [
+                "scripts/content-script-queensgame.js"
+            ],
+            "runs_at": "document_idle"
+        },
+        {
+            "matches": [
+                "https://www.linkedin.com/games/queens/"
+            ],
+            "js": [
+                "scripts/content-script-linkedin.js"
             ],
             "runs_at": "document_idle"
         }
