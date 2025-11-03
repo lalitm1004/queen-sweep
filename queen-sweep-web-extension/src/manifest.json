@@ -4,7 +4,6 @@
     "description": "Solve LinkedIn Queens",
     "version": "0.1.0",
     "host_permissions": [
-        "https://lm04.me/*",
         "https://queensgame.vercel.app/*"
     ],
     "content_security_policy": {
@@ -15,15 +14,6 @@
         "type": "module"
     },
     "content_scripts": [
-        {
-            "matches": [
-                "https://lm04.me/*"
-            ],
-            "js": [
-                "scripts/content-script-reference.js"
-            ],
-            "runs_at": "document_start"
-        },
         {
             "matches": [
                 "https://queensgame.vercel.app/*"
@@ -54,7 +44,6 @@
                 "assets/icon.svg"
             ],
             "matches": [
-                "https://lm04.me/*",
                 "https://queensgame.vercel.app/*"
             ]
         }

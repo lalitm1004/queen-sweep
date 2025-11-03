@@ -1,6 +1,5 @@
 import { SolveRequest, SolveResponse } from "./types/messages.type";
 
-const SOLVE_BUTTON_ID = "queensweep-solve-button";
 
 const extractColorRegions = (): number[][] => {
     const squares = document.querySelectorAll('.square');
@@ -56,8 +55,12 @@ const sendSolveRequest = (colorRegions: number[][]): Promise<SolveResponse> => {
         colorRegions,
     };
 
+    console.log('[QueenSweep] Sending SolveRequest to service-worker:', msg);
     return new Promise(resolve => {
-        chrome.runtime.sendMessage(msg, (response: SolveResponse) => resolve(response));
+        chrome.runtime.sendMessage(msg, (response: SolveResponse) => {
+            console.log('[QueenSweep] Receieved SolveResponse from service-worker:', response);
+            resolve(response);
+        });
     });
 }
 
@@ -112,6 +115,7 @@ const applySolution = (queenPositions: number[][]): void => {
     });
 };
 
+const SOLVE_BUTTON_ID = "queensweep-solve-button";
 const removeSolveButton = (): void => {
     const btn = document.getElementById(SOLVE_BUTTON_ID);
     if (btn) btn.remove();
@@ -172,7 +176,6 @@ const solvePuzzle = async (): Promise<void> => {
             return;
         }
 
-        console.log('[QueenSweep] Solution found:', result.queenPositions);
         injectSolveButton(result.queenPositions);
     } catch (error) {
         console.error('[QueenSweep] Error solving puzzle:', error);

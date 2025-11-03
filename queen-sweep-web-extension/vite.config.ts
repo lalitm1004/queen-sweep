@@ -26,7 +26,6 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 'service-worker': 'src/scripts/service-worker.ts',
-                'content-script-reference': 'src/scripts/content-script-reference.ts',
                 'content-script-queensgame': 'src/scripts/content-script-queensgame.ts',
                 popup: resolve(__dirname, 'src/popup/index.html'),
             },
