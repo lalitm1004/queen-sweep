@@ -1,23 +1,33 @@
-![Queen Sweep Logo](.github/assets/queen-sweep.png)
+![Queen Sweep Logo](.github/assets/queen-sweep-logo.png)
 
 # QueenSweep
 
 **QueenSweep** is a high-performance solver for [LinkedIn's Queens](https://www.linkedin.com/showcase/queens-game), featuring a Rust-based depth first search engine, WebAssembly compilation, and a chromium extension for seamless in-browser solving.
 
-> Built with performance in mind, it can solve most boards in under 5 milliseconds.
+> [!NOTE]
+> Because LinkedIn prohibits automated interaction with its platform, the Chromium extension is only supported on the [QueensGame website](https://queensgame.vercel.app) created by [samimsu](https://github.com/samimsu)
 
 ## Table of Contents
 1. [Features](#features)
-2. [Demo]
+2. [Demo](#demo)
 3. [Architecture]
 4. [Project Structure](#project-structure)
 5. [Running Locally]
 
 ## Features
-- **🚀 Blazingly Fast**: Solves majority of boards in under `5ms`
+- **🚀 Blazingly Fast**: Solves majority of boards in under 5 milliseconds
 - **🧠 Heuristic-Driven Search**: Pluggable, configurable heuristics to aggressively prune the search space
 - **🌐 WebAssembly Runtime**: Compiled from Rust for near-native execution speed directly in the browser
 - **🛰️ Integrated Browser Extension**: One-click solver injected directly in to the puzzle website
+
+## Demo
+The chromium extension injects an **Apply Solution** button once it detects a valid solution for the puzzle curently displayed on the page
+
+<div align="center">
+
+![QueenSweep Demo GIF](.github/assets/demo.gif)
+
+</div>
 
 ## Project Structure
 ```sh
