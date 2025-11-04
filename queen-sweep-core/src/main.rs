@@ -19,8 +19,8 @@ fn main() {
 fn run() -> Result<(), GameStateError> {
     let color_regions = puzzle_11x11();
 
-    let state = GameState::from_color_regions(color_regions, Some(smallest_region_by_empty_cells))?;
-    // let state = GameState::from_color_regions(color_regions, None)?;
+    let heuristic_fn: Option<HeuristicFn> = Some(smallest_region_by_empty_cells);
+    let state = GameState::from_color_regions(color_regions, heuristic_fn)?;
 
     println!("Initial state:");
     pretty_print(&state);
