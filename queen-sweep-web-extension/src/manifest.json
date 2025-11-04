@@ -25,23 +25,23 @@
         }
     ],
     "icons": {
-        "16": "assets/icon_16.png",
-        "32": "assets/icon_32.png",
-        "48": "assets/icon_48.png",
-        "128": "assets/icon_128.png"
+        "16": "assets/images/icon_16.png",
+        "32": "assets/images/icon_32.png",
+        "48": "assets/images/icon_48.png",
+        "128": "assets/images/icon_128.png"
     },
     "action": {
         "default_popup": "popup/index.html",
         "default_title": "QueenSweep",
         "default_icon": {
-            "16": "assets/icon_16.png",
-            "32": "assets/icon_32.png"
+            "16": "assets/images/icon_16.png",
+            "32": "assets/images/icon_32.png"
         }
     },
     "web_accessible_resources": [
         {
             "resources": [
-                "assets/icon.svg"
+                "assets/images/queen_icon.svg"
             ],
             "matches": [
                 "https://queensgame.vercel.app/*"

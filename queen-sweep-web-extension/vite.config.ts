@@ -15,8 +15,7 @@ export default defineConfig({
             targets: [
                 { src: 'src/manifest.json', dest: '.' },
                 { src: 'src/wasm/*.js', dest: 'wasm' },
-                { src: 'src/assets/*.png', dest: 'assets' },
-                { src: 'src/assets/*.svg', dest: 'assets' },
+                { src: 'src/assets/images/*', dest: 'assets/images' },
             ],
         }),
     ],
@@ -41,7 +40,7 @@ export default defineConfig({
                 },
                 assetFileNames: asset => {
                     const name = asset.names[0] || '';
-                    if (name.includes('icon')) return 'assets/[name].[ext]';
+                    if (name.includes('icon')) return 'assets/images/[name].[ext]';
                     if (name.endsWith('.wasm')) return 'wasm/[name].[ext]';
                     return 'popup/[name].[ext]';
                 },

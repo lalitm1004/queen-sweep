@@ -1,1 +1,53 @@
 @import "tailwindcss";
+
+@theme {
+    --font-amarante: "Amarante", serif;
+    --font-inter: "Inter", sans-serif;
+
+    --font-weight-thin: 100;
+    --font-weight-extralight: 200;
+    --font-weight-light: 300;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+    --font-weight-black: 900;
+
+    --color-flexoki-black: #100F0F;
+    --color-flexoki-paper: #FFFCF0;
+    --color-flexoki-base-50: #F2F0E5;
+    --color-flexoki-base-100: #E6E4D9;
+    --color-flexoki-base-150: #DAD8CE;
+    --color-flexoki-base-200: #CECDC3;
+    --color-flexoki-base-300: #B7B5AC;
+    --color-flexoki-base-600: #6F6E69;
+    --color-flexoki-red-600: #AF3029;
+    --color-flexoki-orange-600: #BC5215;
+    --color-flexoki-yellow-600: #AD8301;
+    --color-flexoki-green-600: #66800B;
+    --color-flexoki-cyan-600: #24837B;
+    --color-flexoki-blue-600: #205EA6;
+    --color-flexoki-purple-600: #5E409D;
+    --color-flexoki-magenta-600: #A02F6F;
+}
+
+/* aliases */
+@theme inline {
+    --color-flexoki-light-bg: var(--color-flexoki-paper);
+    --color-flexoki-light-bg-2: var(--color-flexoki-base-50);
+    --color-flexoki-light-tx: var(--color-flexoki-black);
+    --color-flexoki-light-tx-2: var(--color-flexoki-base-600);
+    --color-flexoki-light-tx-3: var(--color-flexoki-base-300);
+    --color-flexoki-light-ui: var(--color-flexoki-base-100);
+    --color-flexoki-light-ui-2: var(--color-flexoki-base-150);
+    --color-flexoki-light-ui-3: var(--color-flexoki-base-200);
+    --color-flexoki-light-re: var(--color-flexoki-red-600);
+    --color-flexoki-light-or: var(--color-flexoki-orange-600);
+    --color-flexoki-light-ye: var(--color-flexoki-yellow-600);
+    --color-flexoki-light-gr: var(--color-flexoki-green-600);
+    --color-flexoki-light-cy: var(--color-flexoki-cyan-600);
+    --color-flexoki-light-bl: var(--color-flexoki-blue-600);
+    --color-flexoki-light-pu: var(--color-flexoki-purple-600);
+    --color-flexoki-light-ma: var(--color-flexoki-magenta-600);
+}
