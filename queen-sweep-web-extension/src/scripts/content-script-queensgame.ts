@@ -1,5 +1,5 @@
-import { SolveRequest, SolveResponse } from "./types/messages.type";
-
+import { createSolveButton, removeSolveButton } from "./utils/button";
+import sendSolveRequest from "./utils/sendSolveRequest";
 
 const extractColorRegions = (): number[][] => {
     const squares = document.querySelectorAll('.square');
@@ -49,20 +49,6 @@ const extractColorRegions = (): number[][] => {
     return colorRegions;
 }
 
-const sendSolveRequest = (colorRegions: number[][]): Promise<SolveResponse> => {
-    const msg: SolveRequest = {
-        type: 'solve-request',
-        colorRegions,
-    };
-
-    console.log('[QueenSweep] Sending SolveRequest to service-worker:', msg);
-    return new Promise(resolve => {
-        chrome.runtime.sendMessage(msg, (response: SolveResponse) => {
-            console.log('[QueenSweep] Receieved SolveResponse from service-worker:', response);
-            resolve(response);
-        });
-    });
-}
 
 const applySolution = (queenPositions: number[][]): void => {
     queenPositions.forEach(([row, col], index) => {
@@ -115,45 +101,10 @@ const applySolution = (queenPositions: number[][]): void => {
     });
 };
 
-const SOLVE_BUTTON_ID = "queensweep-solve-button";
-const removeSolveButton = (): void => {
-    const btn = document.getElementById(SOLVE_BUTTON_ID);
-    if (btn) btn.remove();
-}
-
 const injectSolveButton = (queenPositions: number[][]): void => {
     removeSolveButton();
 
-    const button = document.createElement('button');
-    button.id = 'queensweep-solve-btn';
-    button.style.cssText = `
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0.5rem;
-        border-width: 3px;
-        border-style: solid;
-        border-color: oklch(52.7% 0.154 150.069);
-        border-radius: 9999px;
-        padding: 0.5rem;
-        margin-right: 0.5rem;
-        width: 100%;
-        margin-top: 16px;
-        margin-bottom: 16px;
-        background-color: oklch(72.3% 0.219 149.579);
-        color: oklch(14.5% 0 0);
-        font-weight: 600;
-    `;
-
-    const iconUrl = chrome.runtime.getURL('assets/icon.svg')
-    button.innerHTML = `
-        <img src="${iconUrl}" alt="queen" width="20" height="20">
-        <span>Apply Solution</span>
-    `
-
-    button.addEventListener('click', () => {
-        applySolution(queenPositions);
-    });
+    const button = createSolveButton(() => applySolution(queenPositions));
 
     const container = document.querySelector('[class*="game"]');
 

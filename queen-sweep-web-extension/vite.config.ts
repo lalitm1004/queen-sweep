@@ -31,6 +31,7 @@ export default defineConfig({
             },
             output: {
                 dir: 'dist',
+                manualChunks: undefined,
                 entryFileNames: chunk => {
                     if (chunk.name.startsWith('content-script-')) return `scripts/${chunk.name}.js`;
 
@@ -44,7 +45,6 @@ export default defineConfig({
                     if (name.endsWith('.wasm')) return 'wasm/[name].[ext]';
                     return 'popup/[name].[ext]';
                 },
-                chunkFileNames: 'chunks/[name].js',
             },
         },
     },
