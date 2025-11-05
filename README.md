@@ -8,10 +8,10 @@
 > Because LinkedIn prohibits automated interaction with its platform, the Chromium extension is only supported on the [QueensGame website](https://queensgame.vercel.app) created by [samimsu](https://github.com/samimsu)
 
 ## 📋 Table of Contents
-1. [Features](#features)
-2. [Demo](#demo)
-3. [Architecture]
-4. [Project Structure](#project-structure)
+1. [Features](#-features)
+2. [Demo](#-demo)
+3. [Architecture](#️-architecture)
+4. [Project Structure](#-project-structure)
 5. [Running Locally](#-running-locally)
 
 ## 📃 Features
@@ -28,6 +28,9 @@ The chromium extension injects an **Apply Solution** button once it detects a va
 ![QueenSweep Demo GIF](.github/assets/demo.gif)
 
 </div>
+
+## 🏗️ Architecture
+![QueenSweep Architecture](.github/assets/architecture.svg)
 
 ## 📂 Project Structure
 ```sh
