@@ -75,9 +75,9 @@ npm i
 npm run build
 ```
 4. Load in Chrome
-   - Navigate to `chrome://extensions/`
-   - Enable "Developer mode"
-   - Click "Load unpacked"
+   - Navigate to `brave://extensions/` **or** your extension manager
+   - Enable `Developer mode`
+   - Click `Load unpacked`
    - Select the `queen-sweep-web-extension/dist` directory
    
 ### Running the core engine
