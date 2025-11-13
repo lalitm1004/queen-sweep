@@ -407,7 +407,7 @@ fn compute_hash(states: &[CellState]) -> u64 {
 impl PartialEq for GameState {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.hash == other.hash && self.states == other.states
+        self.states == other.states
     }
 }
 
