@@ -412,3 +412,6 @@ impl PartialEq for GameState {
 }
 
 impl Eq for GameState {}
+
+#[cfg(feature = "display")]
+mod display;

@@ -3,5 +3,10 @@ name = "queen-sweep-core"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+display = ["owo-colors"]
+
 [dependencies]
 queen-sweep-macros = { path = "../queen-sweep-macros" }
+owo-colors = { version = "4", optional = true }

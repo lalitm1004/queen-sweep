@@ -83,21 +83,13 @@ npm run build
 ### Running the core engine
 ```bash
 cd queen-sweep-core
-cargo run --release
+cargo run --release --features display
 ```
 
-The core crate includes a main.rs file that lets you run the solver directly from the command line. You can modify both the heuristic and the puzzle level by editing this file.
+Modify the `intialize_state()` function in `main.rs` to test different puzzles (samples in `sample_levels` module in `main.rs`) or heuristics (in `heuristic.rs`).
 
-```rs
-fn run() -> Result<(), GameStateError> {
-    // look in sample_levels.rs for more options
-    let color_regions = puzzle_11x11();
-
-    // look in heurstic.rs for more options
-    let heuristic_fn: Option<HeuristicFn> = Some(smallest_region_by_empty_cells);
-    let state = GameState::from_color_regions(color_regions, heuristic_fn)?;
-
-    // --snip--
-}
-```
+Performance metrics are displayed after each solve:
+- States explored
+- Time elapsed (milliseconds and microseconds)
+- Exploration rate (states/ms)
 

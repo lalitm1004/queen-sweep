@@ -132,10 +132,10 @@ Color normalization ensures color indices are contiguous starting from 0, regard
 Run the solver directly via the included `main.rs`:
 
 ```bash
-cargo run --release
+cargo run --release --features display
 ```
 
-Modify `main.rs` to test different puzzles (samples in `sample_levels.rs`) or heuristics (in `heuristic.rs`).
+Modify the `intialize_state()` function in `main.rs` to test different puzzles (samples in `sample_levels` module in `main.rs`) or heuristics (in `heuristic.rs`).
 
 Performance metrics are displayed after each solve:
 - States explored
