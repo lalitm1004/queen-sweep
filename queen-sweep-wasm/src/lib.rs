@@ -39,18 +39,18 @@ impl QueensGame {
 
     #[wasm_bindgen]
     pub fn get_states(&self) -> Vec<u8> {
-        self.0.states.iter().map(|&s| s as u8).collect()
+        self.0.states().iter().map(|&s| s as u8).collect()
     }
 
     #[wasm_bindgen]
     pub fn get_states_2d(&self) -> Vec<Uint8Array> {
-        let size = self.0.size;
+        let size = self.0.size();
 
         let mut rows = Vec::with_capacity(size);
         for r in 0..size {
             let start = r * size;
             let end = start + size;
-            let row = self.0.states[start..end]
+            let row = self.0.states()[start..end]
                 .iter()
                 .map(|&s| s as u8)
                 .collect::<Vec<u8>>();

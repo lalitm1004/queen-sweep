@@ -26,12 +26,12 @@ const MAX_BOARD_SIZE: usize = u8::MAX as usize;
 
 #[derive(Debug, Clone)]
 pub struct GameState {
-    pub size: usize,
-    pub states: Vec<CellState>,
+    size: usize,
+    states: Vec<CellState>,
     colors_with_queens: Vec<bool>,
 
     // immutable once initialized
-    pub colors: Rc<[u8]>,
+    colors: Rc<[u8]>,
     color_masks: Rc<[Rc<[bool]>]>,
 
     heuristic: Option<HeuristicFn>,
@@ -39,6 +39,30 @@ pub struct GameState {
     hash: u64,
 }
 
+// Accessors
+impl GameState {
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    #[inline]
+    pub fn states(&self) -> &[CellState] {
+        &self.states
+    }
+
+    #[inline]
+    pub fn colors(&self) -> &[u8] {
+        &self.colors
+    }
+
+    #[inline]
+    pub fn hash(&self) -> u64 {
+        self.hash
+    }
+}
+
+// Helper functions
 impl GameState {
     #[inline]
     pub fn pos_to_idx(&self, r: usize, c: usize) -> usize {
@@ -69,7 +93,9 @@ impl GameState {
     fn in_bounds(&self, r: i32, c: i32) -> bool {
         r >= 0 && c >= 0 && r < self.size as i32 && c < self.size as i32
     }
+}
 
+impl GameState {
     pub fn from_color_regions(
         color_regions: Vec<Vec<u8>>,
         heuristic: Option<HeuristicFn>,

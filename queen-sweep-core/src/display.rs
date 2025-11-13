@@ -22,7 +22,7 @@ const BACK_COLORS: [&str; 14] = [
 ];
 
 pub fn pretty_print(game_state: &GameState) {
-    print_header(game_state.size);
+    print_header(game_state.size());
     print_board(game_state);
     println!();
 }
@@ -36,11 +36,11 @@ fn print_header(size: usize) {
 }
 
 fn print_board(game_state: &GameState) {
-    for r in 0..game_state.size {
+    for r in 0..game_state.size() {
         print!("{:2} ", r);
 
-        for c in 0..game_state.size {
-            let idx = r * game_state.size + c;
+        for c in 0..game_state.size() {
+            let idx = r * game_state.size() + c;
             print_cell(game_state, idx);
         }
 
@@ -49,10 +49,10 @@ fn print_board(game_state: &GameState) {
 }
 
 fn print_cell(game_state: &GameState, idx: usize) {
-    let color_index = (game_state.colors[idx] as usize) % BACK_COLORS.len();
+    let color_index = (game_state.colors()[idx] as usize) % BACK_COLORS.len();
     let back_color = BACK_COLORS[color_index];
 
-    match game_state.states[idx] {
+    match game_state.states()[idx] {
         CellState::Queen => {
             print!("{}{}♛ {}", back_color, BLACK_FG, RESET);
         }

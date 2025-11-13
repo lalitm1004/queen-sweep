@@ -210,7 +210,7 @@ Required for WASM instantiation in Manifest V3.
 1. **Build WASM module**:
 ```bash
 cd queen-sweep-web-extension
-npm run wasm:build
+npm run build:wasm
 ```
 
 2. **Build extension**:

@@ -66,7 +66,7 @@ cd queen-sweep
 2. Build the WASM module
 ```bash
 cd queen-sweep-web-extension
-npm run wasm:build
+npm run build:wasm
 ```
 
 3. Build the extension

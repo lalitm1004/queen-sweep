@@ -4,7 +4,7 @@
   "description": "",
   "type": "module",
   "scripts": {
-    "wasm:build": "wasm-pack build ../queen-sweep-wasm --release --target web --out-dir ../queen-sweep-web-extension/src/wasm",
+    "build:wasm": "wasm-pack build ../queen-sweep-wasm --release --target web --out-dir ../queen-sweep-web-extension/src/wasm",
     "build": "vite build && node move-html.js",
     "copy": "rm -rf /mnt/d/devEnv/extension/* && cp -r dist/* /mnt/d/devEnv/extension/"
   },
