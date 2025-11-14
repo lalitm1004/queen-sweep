@@ -22,7 +22,7 @@ const NEIGHBOR_DISPLACEMENTS: [(i32, i32); 8] = [
     (1, 0),
     (1, 1),
 ];
-const MAX_BOARD_SIZE: usize = u8::MAX as usize;
+pub const MAX_BOARD_SIZE: usize = u8::MAX as usize;
 
 #[derive(Debug, Clone)]
 pub struct GameState {
@@ -52,6 +52,11 @@ impl GameState {
     }
 
     #[inline]
+    pub fn colors_with_queens(&self) -> &[bool] {
+        &self.colors_with_queens
+    }
+
+    #[inline]
     pub fn colors(&self) -> &[u8] {
         &self.colors
     }
@@ -65,12 +70,12 @@ impl GameState {
 // Helper functions
 impl GameState {
     #[inline]
-    pub fn pos_to_idx(&self, r: usize, c: usize) -> usize {
+    fn pos_to_idx(&self, r: usize, c: usize) -> usize {
         r * self.size + c
     }
 
     #[inline]
-    pub fn idx_to_pos(&self, idx: usize) -> (usize, usize) {
+    fn idx_to_pos(&self, idx: usize) -> (usize, usize) {
         (idx / self.size, idx % self.size)
     }
 
@@ -80,7 +85,7 @@ impl GameState {
     }
 
     #[inline]
-    pub fn color_at_idx(&self, idx: usize) -> u8 {
+    fn color_at_idx(&self, idx: usize) -> u8 {
         self.colors[idx] as u8
     }
 
@@ -415,3 +420,6 @@ impl Eq for GameState {}
 
 #[cfg(feature = "display")]
 mod display;
+
+#[cfg(test)]
+mod test;

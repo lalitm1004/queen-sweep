@@ -9,21 +9,20 @@ const COLOR_TABLE: [owo_colors::AnsiColors; 14] = [
     oac::Blue,
     oac::Magenta,
     oac::Cyan,
+    oac::White,
     oac::BrightRed,
     oac::BrightGreen,
     oac::BrightYellow,
     oac::BrightBlue,
     oac::BrightMagenta,
     oac::BrightCyan,
-    oac::White,
-    oac::Black,
+    oac::BrightWhite,
 ];
 
 impl GameState {
     pub fn print_board(&self) {
         self.print_header();
         self.print_rows();
-        println!();
     }
 
     fn print_header(&self) {
