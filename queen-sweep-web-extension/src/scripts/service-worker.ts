@@ -1,5 +1,5 @@
 import init, { QueensGame } from "../wasm/queen_sweep_wasm.js";
-import { SolveRequest, SolveResponse, ERROR_CODES } from "./types/messages.type.js";
+import { SolveRequest, SolveResponse, SOLVER_ERROR_CODES } from "./types/messages.type.js";
 
 let wasmInitPromise: Promise<void> | null = null;
 const ensureWasm = () => {
@@ -25,7 +25,7 @@ const solveBoard = async (colorRegions: number[][]): Promise<SolveResponse> => {
         return {
             type: "solve-response-failure",
             success: false,
-            code: ERROR_CODES.WASM_NOT_INITIALIZED
+            code: SOLVER_ERROR_CODES.WASM_NOT_INITIALIZED
         };
     }
 
@@ -38,7 +38,7 @@ const solveBoard = async (colorRegions: number[][]): Promise<SolveResponse> => {
         return {
             type: 'solve-response-failure',
             success: false,
-            code: ERROR_CODES.BOARD_INIT_FAILED,
+            code: SOLVER_ERROR_CODES.BOARD_INIT_FAILED,
             message: (e instanceof Error) ? e.message : String(e)
         };
     }
@@ -49,7 +49,7 @@ const solveBoard = async (colorRegions: number[][]): Promise<SolveResponse> => {
         return {
             type: 'solve-response-failure',
             success: false,
-            code: ERROR_CODES.BOARD_UNSOLVABLE,
+            code: SOLVER_ERROR_CODES.BOARD_UNSOLVABLE,
         };
     }
 

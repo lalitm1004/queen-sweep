@@ -18,9 +18,9 @@ export interface SolveResponse_Failure {
 
 export type SolveResponse = SolveResponse_Success | SolveResponse_Failure;
 
-export const ERROR_CODES = {
+export const SOLVER_ERROR_CODES = {
     WASM_NOT_INITIALIZED: 'WASM_NOT_INITIALIZED',
     BOARD_INIT_FAILED: 'BOARD_INIT_FAILED',
     BOARD_UNSOLVABLE: 'BOARD_UNSOLVABLE'
 } as const;
-export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
+export type ErrorCode = typeof SOLVER_ERROR_CODES[keyof typeof SOLVER_ERROR_CODES];

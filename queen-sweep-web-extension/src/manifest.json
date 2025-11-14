@@ -19,7 +19,7 @@
                 "https://queensgame.vercel.app/*"
             ],
             "js": [
-                "scripts/content-script-queensgame.js"
+                "scripts/content-script.js"
             ],
             "runs_at": "document_idle"
         }

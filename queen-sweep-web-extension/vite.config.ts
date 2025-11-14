@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
 
+// plugins
 import wasm from "vite-plugin-wasm";
 import tailwindcss from "@tailwindcss/vite";
 import topLevelAwait from "vite-plugin-top-level-await";
@@ -25,16 +26,15 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 'service-worker': 'src/scripts/service-worker.ts',
-                'content-script-queensgame': 'src/scripts/content-script-queensgame.ts',
+                'content-script': 'src/scripts/content-script.ts',
                 popup: resolve(__dirname, 'src/popup/index.html'),
             },
             output: {
                 dir: 'dist',
                 manualChunks: undefined,
                 entryFileNames: chunk => {
-                    if (chunk.name.startsWith('content-script-')) return `scripts/${chunk.name}.js`;
-
                     if (chunk.name === 'service-worker') return 'scripts/service-worker.js';
+                    if (chunk.name === 'content-script') return 'scripts/content-script.js';
                     if (chunk.name === 'popup') return 'popup/popup.js';
                     return 'popup/[name].js';
                 },
