@@ -30,7 +30,7 @@ class LevelParser {
     private readonly baseUrl = `https://api.github.com/repos/${this.repo}/contents`;
 
     private readonly sources = [
-        { name: 'levels', path: 'src/utils/levels' },
+        { name: 'base-levels', path: 'src/utils/levels' },
         { name: 'community-levels', path: 'src/utils/community-levels' },
         { name: 'bonus-levels', path: 'src/utils/bonus-levels' }
     ];
@@ -58,7 +58,6 @@ class LevelParser {
                 return name.endsWith('.ts');
             });
 
-            // Sort alphabetically – stable for both numeric and date filenames
             const sorted = levelFiles.sort((a, b) => a.name.localeCompare(b.name));
 
             const parsed: LevelData[] = [];
