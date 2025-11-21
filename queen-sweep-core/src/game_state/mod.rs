@@ -32,7 +32,7 @@ pub struct GameState {
 
     // immutable once initialized
     colors: Rc<[u8]>,
-    color_masks: Rc<[Rc<[bool]>]>,
+    color_masks: Rc<[bool]>,
 
     heuristic: Option<HeuristicFn>,
 
@@ -91,7 +91,10 @@ impl GameState {
 
     #[inline]
     fn get_color_mask(&self, color: u8) -> &[bool] {
-        &self.color_masks[color as usize]
+        let num_cells = self.size * self.size;
+        let start = color as usize * num_cells;
+        let end = start + num_cells;
+        &self.color_masks[start..end]
     }
 
     #[inline]
@@ -342,16 +345,17 @@ impl TryFrom<Vec<Vec<u8>>> for GameState {
         let mut unique_colors: Vec<u8> = unique_colors.into_iter().collect();
         unique_colors.sort_unstable();
 
-        // build color masks
-        let colors_masks: Vec<Rc<[bool]>> = unique_colors
-            .iter()
-            .map(|&color| {
-                let mask: Vec<bool> = colors.iter().map(|&c| c == color).collect();
-                Rc::from(mask.into_boxed_slice())
-            })
-            .collect();
+        // build color masks as flat vector
+        let total_mask_size = size * size * size;
+        let mut flat_masks = Vec::with_capacity(total_mask_size);
 
-        let color_masks: Rc<[Rc<[bool]>]> = Rc::from(colors_masks.into_boxed_slice());
+        for &color in &unique_colors {
+            for &cell_color in colors.iter() {
+                flat_masks.push(cell_color == color);
+            }
+        }
+
+        let color_masks: Rc<[bool]> = Rc::from(flat_masks.into_boxed_slice());
         let colors_with_queens = vec![false; size];
         let colors: Rc<[u8]> = Rc::from(colors);
 

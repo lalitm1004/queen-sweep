@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::CellState;
 use queen_sweep_macros::heuristic;
 
@@ -9,9 +7,18 @@ pub struct HeuristicContext<'a> {
     pub states: &'a [CellState],
     pub colors_with_queens: &'a [bool],
     pub colors: &'a [u8],
-    pub color_masks: &'a [Rc<[bool]>],
+    pub color_masks: &'a [bool],
 }
 pub type HeuristicFn = fn(&HeuristicContext) -> Vec<((usize, usize), f32)>;
+
+impl<'a> HeuristicContext<'a> {
+    #[inline]
+    fn get_color_mask(&self, color: u8) -> &[bool] {
+        let start = color as usize * self.size * self.size;
+        let end = start + self.size * self.size;
+        &self.color_masks[start..end]
+    }
+}
 
 /// Prioritizes smaller color regions.
 /// Counts all cells of a color regardless of cell state.
