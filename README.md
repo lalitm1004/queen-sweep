@@ -36,6 +36,7 @@ The chromium extension injects an **Apply Solution** button once it detects a va
 ```sh
 # All major sub-directories
 queen-sweep/
+├── queen-sweep-benchmark/      # Core engine benchmark 
 ├── queen-sweep-core/           # Core rust engine
 ├── queen-sweep-macros/         # Procedural macros for core engine
 ├── queen-sweep-wasm/           # WASM bindings
@@ -43,10 +44,11 @@ queen-sweep/
 ```
 
 Each directory contains its own README with detailed information:
+- [Benchmark](./queen-sweep-benchmark/README.md)
 - [Core Engine](./queen-sweep-core/README.md)
 - [Macros](./queen-sweep-macros/README.md)
 - [WASM Bindings](./queen-sweep-wasm/README.md)
-- [Chromium Extension](./queen-sweep-web-extension/README.md)
+- [Web Extension](./queen-sweep-web-extension/README.md)
 
 ## 💻 Running Locally
 Ensure the following prerequisites are available:
