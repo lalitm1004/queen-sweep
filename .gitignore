@@ -1,16 +1,21 @@
+# Generic output files
+build
+dist
+
 # Python-generated files
-__pycache__/
+__pycache__
 *.py[oc]
-build/
-dist/
-wheels/
+wheels
 *.egg-info
 
 # Virtual environments
 .venv
 
+# Ruff
+.ruff_cache
+
 # Javascript
-node_modules/
+node_modules
 
 # Rust
-target/
+target
