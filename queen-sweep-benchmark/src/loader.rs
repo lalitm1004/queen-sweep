@@ -5,56 +5,39 @@ use std::{
 
 use crate::levels::LevelData;
 
-pub struct LevelLoader;
-impl LevelLoader {
-    pub fn load_all() -> Vec<LevelData> {
-        let mut all = Vec::new();
+#[inline]
+pub fn load_base_levels() -> Vec<LevelData> {
+    load_jsonl_file("data/base-levels.jsonl")
+}
 
-        let mut base = Self::load_base_levels();
-        let mut bonus = Self::load_bonus_levels();
-        let mut community = Self::load_community_levels();
+#[inline]
+pub fn load_bonus_levels() -> Vec<LevelData> {
+    load_jsonl_file("data/bonus-levels.jsonl")
+}
 
-        all.append(&mut base);
-        all.append(&mut bonus);
-        all.append(&mut community);
+#[inline]
+pub fn load_community_levels() -> Vec<LevelData> {
+    load_jsonl_file("data/community-levels.jsonl")
+}
 
-        all.sort_by_key(|lvl| lvl.id);
+fn load_jsonl_file(path: &str) -> Vec<LevelData> {
+    let file = File::open(path).expect(&format!("Failed to open {}", path));
 
-        all
-    }
+    let reader = BufReader::new(file);
 
-    pub fn load_base_levels() -> Vec<LevelData> {
-        Self::load_jsonl_file("data/base-levels.jsonl")
-    }
+    let mut result = Vec::new();
 
-    pub fn load_bonus_levels() -> Vec<LevelData> {
-        Self::load_jsonl_file("data/bonus-levels.jsonl")
-    }
+    for line in reader.lines() {
+        if let Ok(text) = line {
+            if !text.trim().is_empty() {
+                let parsed: LevelData = serde_json::from_str(&text).expect("Invalid JSONL record");
 
-    pub fn load_community_levels() -> Vec<LevelData> {
-        Self::load_jsonl_file("data/community-levels.jsonl")
-    }
-
-    fn load_jsonl_file(path: &str) -> Vec<LevelData> {
-        let file = File::open(path).expect(&format!("Failed to open {}", path));
-
-        let reader = BufReader::new(file);
-
-        let mut result = Vec::new();
-
-        for line in reader.lines() {
-            if let Ok(text) = line {
-                if !text.trim().is_empty() {
-                    let parsed: LevelData =
-                        serde_json::from_str(&text).expect("Invalid JSONL record");
-
-                    result.push(parsed);
-                }
+                result.push(parsed);
             }
         }
-
-        result.sort_by_key(|lvl| lvl.id);
-
-        result
     }
+
+    result.sort_by_key(|lvl| lvl.id);
+
+    result
 }
