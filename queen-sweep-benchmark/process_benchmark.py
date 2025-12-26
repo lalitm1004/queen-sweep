@@ -3,36 +3,40 @@ import pandas as pd
 from matplotlib.ticker import ScalarFormatter
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Callable, List, Literal, Tuple
+from enum import StrEnum
+from typing import Callable, Final, List, Tuple
 
 
-BASE_DIR = Path(__file__).parent
-STATS_DIR = BASE_DIR / "stats"
-PLOTS_DIR = STATS_DIR / "plots"
+BASE_DIRECTORY: Final[Path] = Path(__file__).parent
+STATS_DIRECTORY: Final[Path] = BASE_DIRECTORY / "stats"
+PLOTS_DIRECTORY: Final[Path] = STATS_DIRECTORY / "plots"
 
-
-Category = Literal["base", "bonus"]
-Heuristic = Literal[
-    "no-heuristic", "smallest-region-by-empty-cells", "smallest-region-first"
-]
-
-CATEGORIES: List[Category] = ["base", "bonus"]
-HEURISTICS: List[Heuristic] = [
-    "no-heuristic",
-    "smallest-region-by-empty-cells",
-    "smallest-region-first",
-]
-HEURISTIC_LABELS: dict[Heuristic, str] = {
-    "no-heuristic": "No Heuristic",
-    "smallest-region-by-empty-cells": "Smallest Region (Empty Cells)",
-    "smallest-region-first": "Smallest Region First",
-}
-
-COLORS = {
+COLORS: Final[dict[str, str]] = {
     "avg": "#6366F1",
     "p90": "#10B981",
     "p99": "#F59E0B",
 }
+
+
+class Category(StrEnum):
+    BASE = "base"
+    BONUS = "bonus"
+
+
+class Heuristic(StrEnum):
+    NONE = "no-heuristic"
+    SMALLEST_REGION_BY_EMPTY_CELLS = "smallest-region-by-empty-cells"
+    SMALLEST_REGION_FIRST = "smallest-region-first"
+
+    @property
+    def display_label(self) -> str:
+        match self:
+            case Heuristic.NONE:
+                return "No Heuristic"
+            case Heuristic.SMALLEST_REGION_BY_EMPTY_CELLS:
+                return "Smallest Region (Empty Cells)"
+            case Heuristic.SMALLEST_REGION_FIRST:
+                return "Smallest Region First"
 
 
 @dataclass
@@ -50,8 +54,10 @@ class BenchmarkStats:
     steps: Stats
 
 
-def load_csv(stats_dir: Path, category: Category, heuristic: Heuristic) -> pd.DataFrame:
-    path = stats_dir / f"{category}_{heuristic}.csv"
+def load_csv(
+    stats_directory: Path, category: Category, heuristic: Heuristic
+) -> pd.DataFrame:
+    path = stats_directory / f"{category.value}_{heuristic.value}.csv"
     return pd.read_csv(path)
 
 
@@ -63,19 +69,29 @@ def compute_stats(df: pd.DataFrame, column: str) -> Stats:
     )
 
 
-def load_all_stats(stats_dir: Path) -> List[BenchmarkStats]:
+def load_all_stats(stats_directory: Path) -> List[BenchmarkStats]:
     results: List[BenchmarkStats] = []
-    for category in CATEGORIES:
-        for heuristic in HEURISTICS:
-            df = load_csv(stats_dir, category, heuristic)
-            latency_stats = compute_stats(df, "duration_nanos")
+
+    for category in Category:
+        for heuristic in Heuristic:
+            df = load_csv(stats_directory, category, heuristic)
+
+            latency_stats = compute_stats(df, "duration_ns")
             latency_stats.avg /= 1e6
             latency_stats.p90 /= 1e6
             latency_stats.p99 /= 1e6
+
             steps_stats = compute_stats(df, "steps_taken")
+
             results.append(
-                BenchmarkStats(category, heuristic, latency_stats, steps_stats)
+                BenchmarkStats(
+                    category=category,
+                    heuristic=heuristic,
+                    latency=latency_stats,
+                    steps=steps_stats,
+                )
             )
+
     return results
 
 
@@ -93,7 +109,7 @@ def create_bar_chart(
     output_path: Path,
     use_log_scale: bool = False,
 ) -> None:
-    labels = [HEURISTIC_LABELS[s.heuristic] for s in stats]
+    labels = [s.heuristic.display_label for s in stats]
     avg_values = [get_values(s)[0] for s in stats]
     p90_values = [get_values(s)[1] for s in stats]
     p99_values = [get_values(s)[2] for s in stats]
@@ -134,6 +150,7 @@ def create_bar_chart(
     ax.set_xlabel("Heuristic", fontsize=12, fontweight="bold")
     ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
     ax.set_title(title, fontsize=14, fontweight="bold", pad=20)
+
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=0, ha="center", fontsize=10)
 
@@ -159,35 +176,35 @@ def create_bar_chart(
     ax.set_facecolor("#f8f9fa")
     fig.set_facecolor("white")
 
-    plt.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close()
 
 
 def get_latency_values(s: BenchmarkStats) -> Tuple[float, float, float]:
-    return (s.latency.avg, s.latency.p90, s.latency.p99)
+    return s.latency.avg, s.latency.p90, s.latency.p99
 
 
 def get_steps_values(s: BenchmarkStats) -> Tuple[float, float, float]:
-    return (s.steps.avg, s.steps.p90, s.steps.p99)
+    return s.steps.avg, s.steps.p90, s.steps.p99
 
 
 def generate_charts(
-    stats_dir: Path,
-    plots_dir: Path,
+    stats_directory: Path,
+    plots_directory: Path,
     all_stats: List[BenchmarkStats],
 ) -> None:
-    for category in CATEGORIES:
+    for category in Category:
         category_stats = filter_by_category(all_stats, category)
-        category_title = category.capitalize()
+        category_title = category.value.capitalize()
 
         create_bar_chart(
             category_stats,
             f"Category: {category_title} Latencies",
             "Latency (ms)",
             get_latency_values,
-            plots_dir / f"{category}_latency.png",
+            plots_directory / f"{category.value}_latency.png",
         )
 
         create_bar_chart(
@@ -195,7 +212,7 @@ def generate_charts(
             f"Category: {category_title} Latencies (Log Scale)",
             "Latency (ms)",
             get_latency_values,
-            plots_dir / f"{category}_latency_log.png",
+            plots_directory / f"{category.value}_latency_log.png",
             use_log_scale=True,
         )
 
@@ -204,7 +221,7 @@ def generate_charts(
             f"Category: {category_title} Steps Taken",
             "Steps",
             get_steps_values,
-            plots_dir / f"{category}_steps.png",
+            plots_directory / f"{category.value}_steps.png",
         )
 
         create_bar_chart(
@@ -212,17 +229,18 @@ def generate_charts(
             f"Category: {category_title} Steps Taken (Log Scale)",
             "Steps",
             get_steps_values,
-            plots_dir / f"{category}_steps_log.png",
+            plots_directory / f"{category.value}_steps_log.png",
             use_log_scale=True,
         )
 
 
 def print_summary(all_stats: List[BenchmarkStats]) -> None:
-    for category in CATEGORIES:
-        print(f"Category: {category}")
+    for category in Category:
+        print(f"Category: {category.value}")
         category_stats = filter_by_category(all_stats, category)
+
         for s in category_stats:
-            print(f"\n{HEURISTIC_LABELS[s.heuristic].replace(chr(10), ' ')}:")
+            print(f"\n{s.heuristic.display_label}:")
             print(
                 f"  Latency - Avg: {s.latency.avg:.2f}ms, "
                 f"P90: {s.latency.p90:.2f}ms, "
@@ -236,11 +254,10 @@ def print_summary(all_stats: List[BenchmarkStats]) -> None:
 
 
 def main() -> None:
-    all_stats = load_all_stats(STATS_DIR)
-    generate_charts(STATS_DIR, PLOTS_DIR, all_stats)
+    all_stats = load_all_stats(STATS_DIRECTORY)
+    generate_charts(STATS_DIRECTORY, PLOTS_DIRECTORY, all_stats)
     print_summary(all_stats)
-
-    print(f"\nCharts saved to {PLOTS_DIR}")
+    print(f"\nCharts saved to {PLOTS_DIRECTORY}")
 
 
 if __name__ == "__main__":

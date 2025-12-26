@@ -80,7 +80,7 @@ fn benchmark_level(level: &LevelData, heuristic: Heuristic) -> BenchmarkResult {
     BenchmarkResult {
         id: level.id,
         size: level.size,
-        duration_nanos: total_nanos / NUM_RUNS,
+        duration_ns: total_nanos / NUM_RUNS,
         steps_taken,
         solved,
     }

@@ -7,7 +7,7 @@ use serde::Serialize;
 pub struct BenchmarkResult {
     pub id: u32,
     pub size: u32,
-    pub duration_nanos: u128,
+    pub duration_ns: u128,
     pub steps_taken: usize,
     pub solved: bool,
 }

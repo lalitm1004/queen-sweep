@@ -1,4 +1,4 @@
-id,size,duration_nanos,steps_taken,solved
+id,size,duration_ns,steps_taken,solved
 1,11,2626353420,505587,true
 2,11,10737665100,2580512,true
 3,10,132525600,17322,true
