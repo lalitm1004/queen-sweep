@@ -1,49 +1,36 @@
 mod benchmark;
-mod csv_writer;
 mod heuristic;
+#[allow(dead_code)]
 mod levels;
-mod loader;
 
-use std::fs;
+use std::{fs, path::Path};
 
-use benchmark::benchmark_levels_with_progress;
-use csv_writer::write_results_csv;
-use heuristic::Heuristic;
+use crate::{
+    benchmark::{benchmark_levels, write_to_csv},
+    heuristic::Heuristic,
+    levels::{LevelData, load_base_levels, load_bonus_levels},
+};
+
+const STATS_DIR: &'static str = "stats";
 
 fn main() {
-    println!("Loading levels...");
-    let base_levels = loader::load_base_levels();
-    let bonus_levels = loader::load_bonus_levels();
-    let community_levels = loader::load_community_levels();
+    let stats_dir = Path::new(STATS_DIR);
+    fs::create_dir_all(stats_dir).expect("Failed to create output directory");
 
-    println!("  Base levels: {}", base_levels.len());
-    println!("  Bonus levels: {}", bonus_levels.len());
-    println!("  Community levels: {}", community_levels.len());
-    println!();
+    benchmark("base", load_base_levels());
+    benchmark("bonus", load_bonus_levels());
+}
+
+fn benchmark(category: &'static str, levels: Vec<LevelData>) {
+    println!("Category: {} ({} levels)", category, levels.len());
 
     let heuristics = Heuristic::all();
-    let categories = vec![
-        ("base", &base_levels),
-        ("bonus", &bonus_levels),
-        ("community", &community_levels),
-    ];
 
-    fs::create_dir_all("stats/").expect("Failed to create output directory");
+    for heuristic in heuristics {
+        let output_file =
+            Path::new(STATS_DIR).join(format!("{}_{}.csv", category, heuristic.name()));
 
-    for heuristic in &heuristics {
-        println!(
-            "\n----- Running benchmarks with {} -----\n",
-            heuristic.name()
-        );
-
-        for (category_name, levels) in &categories {
-            let results = benchmark_levels_with_progress(levels, category_name, *heuristic);
-
-            let filename = format!("stats/{}_{}.csv", category_name, heuristic.name());
-            write_results_csv(&results, &filename)
-                .unwrap_or_else(|e| eprintln!("Failed to write {}: {}", filename, e));
-        }
+        let result = benchmark_levels(&levels, category, heuristic);
+        write_to_csv(output_file, &result);
     }
-
-    println!("✔ Benchmark complete!");
 }

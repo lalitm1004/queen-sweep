@@ -1,5 +1,5 @@
 mod result;
-mod runner;
+pub use result::write_to_csv;
 
-pub use result::BenchmarkResult;
-pub use runner::benchmark_levels_with_progress;
+mod runner;
+pub use runner::benchmark_levels;

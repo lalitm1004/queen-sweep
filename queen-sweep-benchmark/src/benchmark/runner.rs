@@ -9,41 +9,24 @@ use crate::levels::LevelData;
 
 use super::result::BenchmarkResult;
 
-fn benchmark_level(level: &LevelData, heuristic: Heuristic) -> BenchmarkResult {
-    let color_regions: Vec<Vec<u8>> = level
-        .regions
-        .iter()
-        .map(|row| row.iter().map(|&v| v as u8).collect())
-        .collect();
+const NUM_RUNS: u128 = 5;
 
-    let heuristic_fn = heuristic.to_fn();
-
-    let game_state = GameState::from_color_regions(color_regions, heuristic_fn)
-        .expect("error initializing gamestate");
-
-    let timer = Instant::now();
-    let (solution, steps_taken) = depth_first_search(game_state);
-    let duration_nanos = timer.elapsed().as_nanos();
-
-    let solved = solution.is_some();
-
-    BenchmarkResult::new(level.id, level.size, duration_nanos, steps_taken, solved)
-}
-
-pub fn benchmark_levels_with_progress(
+pub fn benchmark_levels(
     levels: &[LevelData],
     category_name: &str,
     heuristic: Heuristic,
 ) -> Vec<BenchmarkResult> {
     let pb = ProgressBar::new(levels.len() as u64);
+
     pb.set_style(
         ProgressStyle::default_bar()
-            .template("{msg} [{bar:40.cyan/blue}] {pos}/{len} ({percent}%) {elapsed_precise}")
+            .template("{msg} [{bar:40.cyan/blue}] {pos}/{len} ({percent}%)")
             .unwrap()
             .progress_chars("█▓▒░ "),
     );
+
     pb.set_message(format!(
-        "Benchmarking {} ({})",
+        "Benchmarking [ Category: {}, Heuristic: {} ]",
         category_name,
         heuristic.name()
     ));
@@ -58,9 +41,47 @@ pub fn benchmark_levels_with_progress(
         .collect();
 
     pb.finish_with_message(format!(
-        "✔ {} ({}) complete",
+        "✔ Benchmark Complete [ Category: {}, Heuristic: {} ]",
         category_name,
         heuristic.name()
     ));
     results
+}
+
+fn benchmark_level(level: &LevelData, heuristic: Heuristic) -> BenchmarkResult {
+    let color_regions: Vec<Vec<u8>> = level
+        .regions
+        .iter()
+        .map(|row| row.iter().map(|&v| v).collect())
+        .collect();
+
+    let heuristic_fn = heuristic.to_fn();
+
+    let mut total_nanos = 0_u128;
+    let mut steps_taken = 0_usize;
+    let mut solved = false;
+
+    let game_state = GameState::from_color_regions(color_regions, heuristic_fn)
+        .expect("error initializing gamestate");
+
+    for run in 0..NUM_RUNS {
+        let timer = Instant::now();
+        let (solution, steps) = depth_first_search(game_state.clone());
+        let duration_nanos = timer.elapsed().as_nanos();
+
+        total_nanos += duration_nanos;
+
+        if run == 0 {
+            steps_taken = steps;
+            solved = solution.is_some();
+        }
+    }
+
+    BenchmarkResult {
+        id: level.id,
+        size: level.size,
+        duration_nanos: total_nanos / NUM_RUNS,
+        steps_taken,
+        solved,
+    }
 }

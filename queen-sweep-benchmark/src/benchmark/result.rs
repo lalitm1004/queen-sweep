@@ -1,3 +1,6 @@
+use std::{fs::File, path::Path};
+
+use csv::Writer;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize)]
@@ -9,14 +12,30 @@ pub struct BenchmarkResult {
     pub solved: bool,
 }
 
-impl BenchmarkResult {
-    pub fn new(id: u32, size: u32, duration_nanos: u128, steps_taken: usize, solved: bool) -> Self {
-        Self {
-            id,
-            size,
-            duration_nanos,
-            steps_taken,
-            solved,
+pub fn write_to_csv<P: AsRef<Path>>(path: P, results: &[BenchmarkResult]) {
+    let path = path.as_ref();
+    let mut writer = create_csv_writer(path);
+
+    for res in results {
+        if let Err(err) = writer.serialize(res) {
+            eprintln!("Failed to write CSV record to {}: {}", path.display(), err);
+            std::process::exit(1);
+        }
+    }
+
+    if let Err(err) = writer.flush() {
+        eprintln!("Failed to flush CSV writer for {}: {}", path.display(), err);
+        std::process::exit(1);
+    }
+}
+
+#[inline]
+fn create_csv_writer(path: &Path) -> Writer<File> {
+    match File::create(path) {
+        Ok(file) => Writer::from_writer(file),
+        Err(err) => {
+            eprintln!("Failed to create CSV file {}: {}", path.display(), err);
+            std::process::exit(1);
         }
     }
 }
