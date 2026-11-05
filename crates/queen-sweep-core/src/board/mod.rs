@@ -132,3 +132,251 @@ where
         state.write_u64(self.hash);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::QueensBoard;
+    use crate::primitives::Color;
+    use std::collections::{HashMap, HashSet};
+    use std::hash::{DefaultHasher, Hash, Hasher};
+
+    fn create_color_regions<const N: usize>() -> [[Color; N]; N] {
+        std::array::from_fn(|row| std::array::from_fn(|col| Color::from((row + col) % N)))
+    }
+
+    fn create_board<const N: usize>() -> QueensBoard<N>
+    where
+        [(); N]: crate::primitives::ValidBoardSize,
+    {
+        unsafe { QueensBoard::new_unchecked(create_color_regions::<N>()) }
+    }
+
+    fn calculate_hash<T: Hash>(value: &T) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        value.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    #[test]
+    fn test_new_unchecked_initializes_board() {
+        let board = create_board::<4>();
+
+        assert_eq!(board.blocked_mask, [[false; 4]; 4]);
+        assert_eq!(board.queen_col_per_row, [None; 4]);
+        assert_eq!(board.queen_present_by_color, [false; 4]);
+    }
+
+    #[test]
+    fn test_new_unchecked_initializes_hash() {
+        let board = create_board::<4>();
+
+        let expected_hash = super::hash::compute_board_hash(&[None; 4]);
+
+        assert_eq!(board.hash, expected_hash);
+    }
+
+    #[test]
+    fn test_new_unchecked_initializes_immutable_data() {
+        let regions = create_color_regions::<4>();
+
+        let board = unsafe { QueensBoard::new_unchecked(regions) };
+
+        assert_eq!(board.immutable_board_data.get_color_regions(), &regions);
+    }
+
+    #[test]
+    fn test_new_unchecked_initializes_color_masks() {
+        let board = create_board::<4>();
+
+        for color in 0usize..4 {
+            let mask = board.immutable_board_data.get_color_mask(color);
+
+            for row in 0..4 {
+                for col in 0..4 {
+                    assert_eq!(
+                        mask[row][col],
+                        usize::from(
+                            board
+                                .immutable_board_data
+                                .get_color_at_pos(crate::primitives::Position::new(row, col))
+                        ) == color
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_clone_board() {
+        let board = create_board::<4>();
+        let cloned = board.clone();
+
+        assert_eq!(board, cloned);
+        assert_eq!(board.blocked_mask, cloned.blocked_mask);
+        assert_eq!(board.queen_col_per_row, cloned.queen_col_per_row);
+        assert_eq!(board.queen_present_by_color, cloned.queen_present_by_color);
+        assert_eq!(board.hash, cloned.hash);
+    }
+
+    #[test]
+    fn test_clone_shares_immutable_data() {
+        let board = create_board::<4>();
+        let cloned = board.clone();
+
+        assert!(std::rc::Rc::ptr_eq(
+            &board.immutable_board_data,
+            &cloned.immutable_board_data
+        ));
+    }
+
+    #[test]
+    fn test_board_equality() {
+        let board1 = create_board::<4>();
+        let board2 = create_board::<4>();
+
+        assert_eq!(board1, board2);
+        assert!(!(board1 != board2));
+    }
+
+    #[test]
+    fn test_board_inequality() {
+        let mut board1 = create_board::<4>();
+        let mut board2 = create_board::<4>();
+
+        board1.queen_col_per_row[0] = Some(1);
+        board2.queen_col_per_row[0] = Some(2);
+
+        assert_ne!(board1, board2);
+    }
+
+    #[test]
+    fn test_board_equality_depends_only_on_queen_positions() {
+        let mut board1 = create_board::<4>();
+        let mut board2 = create_board::<4>();
+
+        board1.blocked_mask[0][0] = true;
+        board2.blocked_mask[1][1] = true;
+
+        board1.queen_present_by_color[0] = true;
+        board2.queen_present_by_color[1] = true;
+
+        board1.hash = 100;
+        board2.hash = 200;
+
+        assert_eq!(board1, board2);
+    }
+
+    #[test]
+    fn test_board_equality_with_different_queen_rows() {
+        let mut board1 = create_board::<4>();
+        let mut board2 = create_board::<4>();
+
+        board1.queen_col_per_row[0] = Some(1);
+        board2.queen_col_per_row[1] = Some(1);
+
+        assert_ne!(board1, board2);
+    }
+
+    #[test]
+    fn test_board_equality_with_partial_queen_placement() {
+        let mut board1 = create_board::<4>();
+        let mut board2 = create_board::<4>();
+
+        board1.queen_col_per_row[0] = Some(1);
+        board1.queen_col_per_row[2] = Some(3);
+
+        board2.queen_col_per_row[0] = Some(1);
+        board2.queen_col_per_row[2] = Some(3);
+
+        assert_eq!(board1, board2);
+    }
+
+    #[test]
+    fn test_board_hash() {
+        let board1 = create_board::<4>();
+        let board2 = create_board::<4>();
+
+        assert_eq!(calculate_hash(&board1), calculate_hash(&board2));
+    }
+
+    #[test]
+    fn test_equal_boards_have_equal_hashes() {
+        let mut board1 = create_board::<4>();
+        let mut board2 = create_board::<4>();
+
+        board1.queen_col_per_row[0] = Some(1);
+        board2.queen_col_per_row[0] = Some(1);
+
+        assert_eq!(board1, board2);
+        assert_eq!(calculate_hash(&board1), calculate_hash(&board2));
+    }
+
+    #[test]
+    fn test_board_hash_changes_with_queen_placement() {
+        let mut board1 = create_board::<4>();
+        let mut board2 = create_board::<4>();
+
+        board1.queen_col_per_row[0] = Some(1);
+        board2.queen_col_per_row[0] = Some(2);
+
+        board1.hash = super::hash::compute_board_hash(&board1.queen_col_per_row);
+
+        board2.hash = super::hash::compute_board_hash(&board2.queen_col_per_row);
+
+        assert_ne!(board1.hash, board2.hash);
+    }
+
+    #[test]
+    fn test_hashset_deduplicates_equal_boards() {
+        let board1 = create_board::<4>();
+        let board2 = create_board::<4>();
+
+        let mut boards = HashSet::new();
+
+        boards.insert(board1);
+        boards.insert(board2);
+
+        assert_eq!(boards.len(), 1);
+    }
+
+    #[test]
+    fn test_hashset_stores_different_boards() {
+        let mut board1 = create_board::<4>();
+        let mut board2 = create_board::<4>();
+
+        board1.queen_col_per_row[0] = Some(1);
+        board2.queen_col_per_row[0] = Some(2);
+
+        board1.hash = super::hash::compute_board_hash(&board1.queen_col_per_row);
+
+        board2.hash = super::hash::compute_board_hash(&board2.queen_col_per_row);
+
+        let mut boards = HashSet::new();
+
+        boards.insert(board1);
+        boards.insert(board2);
+
+        assert_eq!(boards.len(), 2);
+    }
+
+    #[test]
+    fn test_hashmap_board_keys() {
+        let board1 = create_board::<4>();
+        let board2 = create_board::<4>();
+
+        let mut map = HashMap::new();
+
+        map.insert(board1, "initial");
+
+        assert_eq!(map.get(&board2), Some(&"initial"));
+    }
+
+    #[test]
+    fn test_larger_board() {
+        let board = create_board::<8>();
+
+        assert_eq!(board.blocked_mask, [[false; 8]; 8]);
+        assert_eq!(board.queen_col_per_row, [None; 8]);
+        assert_eq!(board.queen_present_by_color, [false; 8]);
+    }
+}
