@@ -1,7 +1,10 @@
-use crate::primitives::{Color, Position, ValidBoardSize};
+use crate::primitives::{Cell, Color, Position, ValidBoardSize};
 
+mod error;
 mod hash;
 mod immutable;
+
+pub use error::QueensPlacementError;
 
 #[derive(Debug, Clone)]
 pub struct QueensBoard<const N: usize>
@@ -77,20 +80,35 @@ where
         &self.immutable_board_data.get_color_regions()
     }
 
+    pub fn get_cells(&self) -> [[Cell; N]; N] {
+        let mut cells = [[Cell::Blocked; N]; N];
+
+        for row in 0..N {
+            let queen_col = self.queen_col_per_row[row];
+
+            for col in 0..N {
+                // cell is of type empty
+                if !self.blocked_mask[row][col] {
+                    cells[row][col] = Cell::Empty;
+                    continue;
+                }
+
+                // cell is of type queen
+                if queen_col == Some(col) {
+                    cells[row][col] = Cell::Queen;
+                }
+            }
+        }
+
+        cells
+    }
+
     pub fn queen_present_by_color(&self, color: impl Into<usize>) -> bool {
         self.queen_present_by_color[color.into()]
     }
 
     pub fn is_solved(&self) -> bool {
-        let mut color = 0;
-        while color < N {
-            if !self.queen_present_by_color(color) {
-                return false;
-            }
-            color += 1;
-        }
-
-        true
+        self.queen_col_per_row.iter().all(|c| c.is_some())
     }
 
     fn placement_is_valid(
@@ -200,6 +218,82 @@ where
             immutable_board_data: std::rc::Rc::clone(&self.immutable_board_data),
         }
     }
+
+    pub fn place_queen(&self, pos: Position) -> Result<Self, QueensPlacementError> {
+        let (r, c) = (pos.row(), pos.col());
+
+        if r >= N || c >= N {
+            return Err(QueensPlacementError::OutOfBounds { r, c });
+        }
+
+        if self.blocked_mask[r][c] {
+            return Err(QueensPlacementError::NonEmptyPlacementTarget { r, c });
+        }
+
+        let new_board = unsafe { self.place_queen_unchecked(pos) };
+        Ok(new_board)
+    }
+
+    pub unsafe fn place_queen_unchecked(&self, pos: Position) -> Self {
+        let mut new_blocked_mask = self.blocked_mask.clone();
+        let mut new_queen_col_per_row = self.queen_col_per_row.clone();
+        let mut new_queen_present_by_color = self.queen_present_by_color.clone();
+
+        let (row, col) = pos.to_tuple();
+
+        // place queen
+        new_queen_col_per_row[row] = Some(col);
+
+        // mark color region as having a queen
+        let color = self.get_color_at_pos(pos);
+        new_queen_present_by_color[usize::from(color)] = true;
+
+        // block pos and row + col
+        for i in 0..N {
+            new_blocked_mask[row][i] = true;
+            new_blocked_mask[i][col] = true;
+        }
+
+        // block 8 neighbors
+        for (dr, dc) in NEIGHBOR_DELTAS {
+            if let Some(new_pos) = pos.displace::<N>(dr, dc) {
+                new_blocked_mask[new_pos.row()][new_pos.col()] = true;
+            }
+        }
+
+        // block color region
+        let color_mask = self.get_color_mask(color);
+        for r in 0..N {
+            for c in 0..N {
+                if color_mask[r][c] {
+                    new_blocked_mask[r][c] = true;
+                }
+            }
+        }
+
+        Self {
+            blocked_mask: new_blocked_mask,
+            queen_col_per_row: new_queen_col_per_row,
+            queen_present_by_color: new_queen_present_by_color,
+            hash: hash::compute_board_hash(&new_queen_col_per_row),
+            immutable_board_data: std::rc::Rc::clone(&self.immutable_board_data),
+        }
+        .perform_exhaustive_blocking()
+    }
+
+    pub fn get_valid_placements(&self) -> Vec<Position> {
+        let mut positions = Vec::with_capacity(N * N);
+
+        for row in 0..N {
+            for col in 0..N {
+                if !self.blocked_mask[row][col] {
+                    positions.push(Position::new(row, col));
+                }
+            }
+        }
+
+        positions
+    }
 }
 
 /// Equality for `QueensBoard` is defined solely in terms of queen placement,
@@ -305,8 +399,8 @@ const NEIGHBOR_DELTAS: [(i32, i32); 8] = [
 
 #[cfg(test)]
 mod tests {
-    use super::QueensBoard;
-    use crate::primitives::Color;
+    use super::{QueensBoard, QueensPlacementError};
+    use crate::primitives::{Cell, Color, Position};
     use std::collections::{HashMap, HashSet};
     use std::hash::{DefaultHasher, Hash, Hasher};
 
@@ -319,6 +413,22 @@ mod tests {
         [(); N]: crate::primitives::ValidBoardSize,
     {
         unsafe { QueensBoard::new_unchecked(create_color_regions::<N>()) }
+    }
+
+    /// A solvable `N = 4` color layout: each color is a 2x2 quadrant.
+    ///
+    /// One known solution is queens at `(0,1)`, `(1,3)`, `(2,0)`, `(3,2)`.
+    fn quadrant_regions() -> [[Color; 4]; 4] {
+        [
+            [0.into(), 0.into(), 1.into(), 1.into()],
+            [0.into(), 0.into(), 1.into(), 1.into()],
+            [2.into(), 2.into(), 3.into(), 3.into()],
+            [2.into(), 2.into(), 3.into(), 3.into()],
+        ]
+    }
+
+    fn quadrant_board() -> QueensBoard<4> {
+        unsafe { QueensBoard::new_unchecked(quadrant_regions()) }
     }
 
     fn calculate_hash<T: Hash>(value: &T) -> u64 {
@@ -548,5 +658,342 @@ mod tests {
         assert_eq!(board.blocked_mask, [[false; 8]; 8]);
         assert_eq!(board.queen_col_per_row, [None; 8]);
         assert_eq!(board.queen_present_by_color, [false; 8]);
+    }
+
+    // ------------------------------------------------------------------
+    // place_queen / place_queen_unchecked
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_place_queen_rejects_out_of_bounds() {
+        let board = create_board::<4>();
+
+        let err = board.place_queen(Position::new(4, 0)).unwrap_err();
+        assert!(matches!(
+            err,
+            QueensPlacementError::OutOfBounds { r: 4, c: 0 }
+        ));
+
+        let err = board.place_queen(Position::new(0, 4)).unwrap_err();
+        assert!(matches!(
+            err,
+            QueensPlacementError::OutOfBounds { r: 0, c: 4 }
+        ));
+    }
+
+    #[test]
+    fn test_place_queen_rejects_blocked_target() {
+        let board = create_board::<4>();
+        let placed = board.place_queen(Position::new(0, 0)).unwrap();
+
+        // Same row is blocked by the queen.
+        let err = placed.place_queen(Position::new(0, 1)).unwrap_err();
+        assert!(matches!(
+            err,
+            QueensPlacementError::NonEmptyPlacementTarget { r: 0, c: 1 }
+        ));
+
+        // The queen's own cell is also blocked.
+        let err = placed.place_queen(Position::new(0, 0)).unwrap_err();
+        assert!(matches!(
+            err,
+            QueensPlacementError::NonEmptyPlacementTarget { r: 0, c: 0 }
+        ));
+    }
+
+    #[test]
+    fn test_place_queen_records_queen_and_color() {
+        let board = create_board::<4>();
+
+        // (1, 2) has color (1 + 2) % 4 == 3 on the diagonal layout.
+        let placed = board.place_queen(Position::new(1, 2)).unwrap();
+
+        assert_eq!(placed.queen_col_per_row[1], Some(2));
+        assert!(placed.queen_present_by_color(3usize));
+        assert!(!placed.queen_present_by_color(0usize));
+        assert!(!placed.queen_present_by_color(1usize));
+        assert!(!placed.queen_present_by_color(2usize));
+    }
+
+    #[test]
+    fn test_place_queen_blocks_row_column_and_neighbors() {
+        let board = create_board::<4>();
+        let placed = board.place_queen(Position::new(1, 1)).unwrap();
+
+        // Row and column are fully blocked.
+        for i in 0..4 {
+            assert!(placed.blocked_mask[1][i], "row 1 col {i} should be blocked");
+            assert!(placed.blocked_mask[i][1], "row {i} col 1 should be blocked");
+        }
+
+        // All eight neighbors are blocked.
+        for (dr, dc) in super::NEIGHBOR_DELTAS {
+            if let Some(pos) = Position::new(1, 1).displace::<4>(dr, dc) {
+                assert!(
+                    placed.blocked_mask[pos.row()][pos.col()],
+                    "neighbor ({}, {}) should be blocked",
+                    pos.row(),
+                    pos.col()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_place_queen_blocks_color_region() {
+        let board = create_board::<4>();
+
+        // (1, 1) has color 2 on the diagonal layout.
+        let placed = board.place_queen(Position::new(1, 1)).unwrap();
+
+        let mask = board.get_color_mask(2usize);
+        for row in 0..4 {
+            for col in 0..4 {
+                if mask[row][col] {
+                    assert!(
+                        placed.blocked_mask[row][col],
+                        "color-region cell ({row}, {col}) should be blocked"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_place_queen_recomputes_hash() {
+        let board = create_board::<4>();
+        let placed = board.place_queen(Position::new(1, 2)).unwrap();
+
+        assert_eq!(
+            placed.hash,
+            super::hash::compute_board_hash(&placed.queen_col_per_row)
+        );
+        assert_ne!(placed.hash, board.hash);
+    }
+
+    #[test]
+    fn test_place_queen_shares_immutable_data() {
+        let board = create_board::<4>();
+        let placed = board.place_queen(Position::new(0, 0)).unwrap();
+
+        assert!(std::rc::Rc::ptr_eq(
+            &board.immutable_board_data,
+            &placed.immutable_board_data
+        ));
+    }
+
+    // ------------------------------------------------------------------
+    // placement_is_valid (core validation logic)
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_placement_is_valid_accepts_all_on_empty_board() {
+        // On the quadrant layout every cell is a valid first move.
+        let board = quadrant_board();
+        let blocked_mask = [[false; 4]; 4];
+        let queen_present_by_color = [false; 4];
+
+        for row in 0..4 {
+            for col in 0..4 {
+                assert!(
+                    board.placement_is_valid(
+                        &blocked_mask,
+                        &queen_present_by_color,
+                        Position::new(row, col)
+                    ),
+                    "({row}, {col}) should be valid on an empty board"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_placement_is_valid_rejects_blocked_cell() {
+        let board = create_board::<4>();
+        let mut blocked_mask = [[false; 4]; 4];
+        blocked_mask[0][0] = true;
+        let queen_present_by_color = [false; 4];
+
+        assert!(!board.placement_is_valid(
+            &blocked_mask,
+            &queen_present_by_color,
+            Position::new(0, 0)
+        ));
+    }
+
+    #[test]
+    fn test_placement_is_valid_rejects_occupied_color() {
+        let board = create_board::<4>();
+        let blocked_mask = [[false; 4]; 4];
+        let mut queen_present_by_color = [false; 4];
+        queen_present_by_color[0] = true;
+
+        // (0, 0) has color 0, which already has a queen.
+        assert!(!board.placement_is_valid(
+            &blocked_mask,
+            &queen_present_by_color,
+            Position::new(0, 0)
+        ));
+    }
+
+    #[test]
+    fn test_placement_is_valid_rejects_stranded_region() {
+        let board = quadrant_board();
+
+        // Block all of color 1 except (1, 2). Color 1 = {(0,2), (0,3), (1,2), (1,3)}.
+        let mut blocked_mask = [[false; 4]; 4];
+        blocked_mask[0][2] = true;
+        blocked_mask[0][3] = true;
+        blocked_mask[1][3] = true;
+        let queen_present_by_color = [false; 4];
+
+        // (2, 2) is color 3; placing it blocks column 2, stranding color 1's
+        // last remaining cell (1, 2).
+        assert!(!board.placement_is_valid(
+            &blocked_mask,
+            &queen_present_by_color,
+            Position::new(2, 2)
+        ));
+
+        // (3, 3) is also color 3 but leaves (1, 2) untouched, so it stays valid.
+        assert!(board.placement_is_valid(
+            &blocked_mask,
+            &queen_present_by_color,
+            Position::new(3, 3)
+        ));
+    }
+
+    // ------------------------------------------------------------------
+    // perform_exhaustive_blocking
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_exhaustive_blocking_reaches_fixpoint() {
+        let board = create_board::<4>();
+        let placed = board.place_queen(Position::new(0, 0)).unwrap();
+
+        // A second pass of exhaustive blocking must change nothing.
+        let once_more = placed.clone().perform_exhaustive_blocking();
+        assert_eq!(once_more.blocked_mask, placed.blocked_mask);
+    }
+
+    #[test]
+    fn test_exhaustive_blocking_eliminates_dead_end() {
+        // On the quadrant board a queen at (0, 0) cannot lead to a solution:
+        // exhaustive blocking must eliminate every remaining placement.
+        let board = quadrant_board();
+        let placed = board.place_queen(Position::new(0, 0)).unwrap();
+
+        assert!(placed.get_valid_placements().is_empty());
+        assert!(placed.blocked_mask.iter().flatten().all(|&blocked| blocked));
+    }
+
+    // ------------------------------------------------------------------
+    // get_valid_placements / get_cells / is_solved
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_get_valid_placements_matches_blocked_mask() {
+        let board = quadrant_board();
+        let placed = board.place_queen(Position::new(0, 1)).unwrap();
+
+        let placements = placed.get_valid_placements();
+
+        let mut expected = Vec::new();
+        for row in 0..4 {
+            for col in 0..4 {
+                if !placed.blocked_mask[row][col] {
+                    expected.push(Position::new(row, col));
+                }
+            }
+        }
+
+        assert_eq!(placements, expected);
+        assert!(
+            placements
+                .iter()
+                .all(|p| !placed.blocked_mask[p.row()][p.col()])
+        );
+    }
+
+    #[test]
+    fn test_get_cells_matches_internal_state() {
+        let board = quadrant_board();
+        let placed = board.place_queen(Position::new(0, 1)).unwrap();
+
+        let cells = placed.get_cells();
+
+        for row in 0..4 {
+            for col in 0..4 {
+                let expected = if placed.queen_col_per_row[row] == Some(col) {
+                    Cell::Queen
+                } else if placed.blocked_mask[row][col] {
+                    Cell::Blocked
+                } else {
+                    Cell::Empty
+                };
+
+                assert_eq!(cells[row][col], expected, "cell ({row}, {col})");
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_solved_tracks_completion() {
+        let board = create_board::<4>();
+        assert!(!board.is_solved());
+
+        let mut partial = board.clone();
+        partial.queen_col_per_row = [Some(0), Some(1), None, None];
+        assert!(!partial.is_solved());
+
+        let mut solved = board.clone();
+        solved.queen_col_per_row = [Some(0), Some(1), Some(2), Some(3)];
+        assert!(solved.is_solved());
+    }
+
+    // ------------------------------------------------------------------
+    // End-to-end solve
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_solve_quadrant_board_end_to_end() {
+        let board = quadrant_board();
+        assert!(!board.is_solved());
+
+        let after_first = board.place_queen(Position::new(0, 1)).unwrap();
+        assert_eq!(
+            after_first.get_valid_placements(),
+            vec![
+                Position::new(1, 3),
+                Position::new(2, 0),
+                Position::new(3, 2)
+            ]
+        );
+
+        let after_second = after_first.place_queen(Position::new(1, 3)).unwrap();
+        assert_eq!(
+            after_second.get_valid_placements(),
+            vec![Position::new(2, 0), Position::new(3, 2)]
+        );
+
+        let after_third = after_second.place_queen(Position::new(2, 0)).unwrap();
+        assert_eq!(
+            after_third.get_valid_placements(),
+            vec![Position::new(3, 2)]
+        );
+
+        let solved = after_third.place_queen(Position::new(3, 2)).unwrap();
+        assert!(solved.is_solved());
+        assert!(solved.get_valid_placements().is_empty());
+        assert_eq!(
+            solved.queen_col_per_row,
+            [Some(1), Some(3), Some(0), Some(2)]
+        );
+
+        // Every color ends up with exactly one queen.
+        for color in 0usize..4 {
+            assert!(solved.queen_present_by_color(color));
+        }
     }
 }
