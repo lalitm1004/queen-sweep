@@ -1,4 +1,4 @@
-use crate::primitives::{Color, ValidBoardSize};
+use crate::primitives::{Color, Position, ValidBoardSize};
 
 mod hash;
 mod immutable;
@@ -39,6 +39,165 @@ where
             queen_present_by_color,
             hash,
             immutable_board_data,
+        }
+    }
+
+    #[inline]
+    pub const fn get_size(&self) -> usize {
+        N
+    }
+
+    #[inline]
+    pub const fn get_blocked_mask(&self) -> &[[bool; N]; N] {
+        &self.blocked_mask
+    }
+
+    #[inline]
+    pub const fn get_queen_col_per_row(&self) -> &[Option<usize>; N] {
+        &self.queen_col_per_row
+    }
+
+    #[inline]
+    pub const fn get_hash(&self) -> u64 {
+        self.hash
+    }
+
+    #[inline]
+    pub fn get_color_at_pos(&self, pos: Position) -> Color {
+        self.immutable_board_data.get_color_at_pos(pos)
+    }
+
+    #[inline]
+    pub fn get_color_mask(&self, color: impl Into<usize>) -> &[[bool; N]; N] {
+        &self.immutable_board_data.get_color_mask(color)
+    }
+
+    #[inline]
+    pub fn get_color_regions(&self) -> &[[Color; N]; N] {
+        &self.immutable_board_data.get_color_regions()
+    }
+
+    pub fn queen_present_by_color(&self, color: impl Into<usize>) -> bool {
+        self.queen_present_by_color[color.into()]
+    }
+
+    pub fn is_solved(&self) -> bool {
+        let mut color = 0;
+        while color < N {
+            if !self.queen_present_by_color(color) {
+                return false;
+            }
+            color += 1;
+        }
+
+        true
+    }
+
+    fn placement_is_valid(
+        &self,
+        blocked_mask: &[[bool; N]; N],
+        queen_present_by_color: &[bool; N],
+        pos: Position,
+    ) -> bool {
+        let (r, c) = pos.to_tuple();
+
+        // cell must be empty
+        if blocked_mask[r][c] {
+            return false;
+        }
+
+        // color must not have a queen placed already
+        let color = self.get_color_at_pos(pos);
+        if queen_present_by_color[usize::from(color)] {
+            return false;
+        }
+
+        // simulate blocking
+        let mut blocked_mask = blocked_mask.clone();
+
+        // block row & col
+        for i in 0..N {
+            blocked_mask[r][i] = true;
+            blocked_mask[i][c] = true;
+        }
+
+        // block neighbors
+        for (dr, dc) in NEIGHBOR_DELTAS {
+            if let Some(pos) = pos.displace::<N>(dr, dc) {
+                blocked_mask[pos.row()][pos.col()] = true;
+            }
+        }
+
+        // block color region
+        let color_mask = self.get_color_mask(color);
+        for r in 0..N {
+            for c in 0..N {
+                if color_mask[r][c] {
+                    blocked_mask[r][c] = true;
+                }
+            }
+        }
+
+        // check if placement leaves any region unsolvable
+        for other_color in 0..N {
+            if other_color == color.into() || queen_present_by_color[other_color] {
+                continue;
+            }
+
+            let other_color_mask = self.get_color_mask(other_color);
+            let mut has_valid_cell = false;
+
+            'outer: for row in 0..N {
+                for col in 0..N {
+                    if other_color_mask[row][col] && !blocked_mask[row][col] {
+                        has_valid_cell = true;
+                        break 'outer;
+                    }
+                }
+            }
+
+            if !has_valid_cell {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    fn perform_exhaustive_blocking(self) -> Self {
+        let mut new_blocked_mask = self.blocked_mask.clone();
+
+        loop {
+            let mut blocked_any = false;
+
+            for row in 0..N {
+                for col in 0..N {
+                    let pos = Position::new(row, col);
+
+                    if !new_blocked_mask[row][col]
+                        && !self.placement_is_valid(
+                            &new_blocked_mask,
+                            &self.queen_present_by_color,
+                            pos,
+                        )
+                    {
+                        new_blocked_mask[row][col] = true;
+                        blocked_any = true;
+                    }
+                }
+            }
+
+            if !blocked_any {
+                break;
+            }
+        }
+
+        Self {
+            blocked_mask: new_blocked_mask,
+            queen_col_per_row: self.queen_col_per_row,
+            queen_present_by_color: self.queen_present_by_color,
+            hash: self.hash,
+            immutable_board_data: std::rc::Rc::clone(&self.immutable_board_data),
         }
     }
 }
@@ -132,6 +291,17 @@ where
         state.write_u64(self.hash);
     }
 }
+
+const NEIGHBOR_DELTAS: [(i32, i32); 8] = [
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+    (0, -1),
+    (0, 1),
+    (1, -1),
+    (1, 0),
+    (1, 1),
+];
 
 #[cfg(test)]
 mod tests {
