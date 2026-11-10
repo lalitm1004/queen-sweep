@@ -26,6 +26,18 @@ impl<const N: usize> QueensBoard<N>
 where
     [(); N]: ValidBoardSize,
 {
+    /// Creates an empty `QueensBoard` with the given color regions, without
+    /// validating the region data.
+    ///
+    /// The board assumes exactly `N` distinct color indices (`0..N`) and stores
+    /// per-color state in fixed-size arrays indexed by those values (for
+    /// example `queen_present_by_color` and the precomputed color masks).
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee that every `Color` in `color_regions` has a
+    /// value strictly less than `N`. A color value of `N` or greater will later
+    /// cause out-of-bounds indexing when placing queens or querying color data.
     pub unsafe fn new_unchecked(color_regions: [[Color; N]; N]) -> Self {
         let blocked_mask = [[false; N]; N];
         let queen_col_per_row = [None; N];
@@ -230,10 +242,29 @@ where
             return Err(QueensPlacementError::NonEmptyPlacementTarget { r, c });
         }
 
+        // SAFETY: `pos` was verified to be in bounds and unblocked by the
+        // checks above, satisfying the preconditions of `place_queen_unchecked`.
         let new_board = unsafe { self.place_queen_unchecked(pos) };
         Ok(new_board)
     }
 
+    /// Places a queen at `pos` without validating the placement.
+    ///
+    /// Unlike [`place_queen`](Self::place_queen), this performs no bounds or
+    /// blocked-cell checks. It records the queen, blocks its row, column,
+    /// eight neighbors, and color region, recomputes the hash, and then runs
+    /// exhaustive blocking.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee that:
+    ///
+    /// - `pos` is in bounds (`pos.row() < N` and `pos.col() < N`), so that the
+    ///   fixed-size arrays are indexed safely.
+    /// - The target cell is currently unblocked and its color region does not
+    ///   already contain a queen (i.e. `pos` is a valid placement). Otherwise
+    ///   the resulting board violates the one-queen-per-row/column/color
+    ///   invariants.
     pub unsafe fn place_queen_unchecked(&self, pos: Position) -> Self {
         let mut new_blocked_mask = self.blocked_mask.clone();
         let mut new_queen_col_per_row = self.queen_col_per_row.clone();

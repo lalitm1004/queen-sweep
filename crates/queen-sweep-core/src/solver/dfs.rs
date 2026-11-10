@@ -55,8 +55,9 @@ where
         let valid_placements = H::order_by_heuristic(valid_placements, &current_board);
 
         for placement in valid_placements {
-            // Safety:
-            //  Placements are sourced from get_valid_placements()
+            // SAFETY: `placement` is sourced from `get_valid_placements`, which
+            // only yields in-bounds, unblocked cells, satisfying the
+            // preconditions of `place_queen_unchecked`.
             let new_board = unsafe { current_board.place_queen_unchecked(placement) };
             if let Some(solution) = Self::dfs_helper(new_board, seen, num_states_visited) {
                 return Some(solution);
