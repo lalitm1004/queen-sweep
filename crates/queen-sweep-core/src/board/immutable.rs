@@ -1,5 +1,15 @@
+//! Immutable, shared board configuration.
+//!
+//! The color-region layout never changes during a solve, so it is stored once
+//! in an [`ImmutableBoardData`] and shared between boards via
+//! [`std::rc::Rc`].
+
 use crate::primitives::{Color, Position, ValidBoardSize};
 
+/// The immutable color-region layout shared by every board in a search.
+///
+/// Besides the raw `color_regions` grid, it caches a boolean `color_masks`
+/// table so the cells of any color can be looked up in `O(1)`.
 #[derive(Debug)]
 pub struct ImmutableBoardData<const N: usize>
 where
@@ -14,6 +24,7 @@ impl<const N: usize> ImmutableBoardData<N>
 where
     [(); N]: ValidBoardSize,
 {
+    /// Builds the immutable data, precomputing the per-color masks.
     pub(super) fn new(color_regions: [[Color; N]; N]) -> Self {
         let mut color_masks = [[[false; N]; N]; N];
 
@@ -32,11 +43,13 @@ where
         }
     }
 
+    /// Returns the color of the cell at `pos`.
     #[inline(always)]
     pub(super) const fn get_color_at_pos(&self, pos: Position) -> Color {
         self.color_regions[pos.row()][pos.col()]
     }
 
+    /// Returns the boolean mask of the given color region.
     #[inline(always)]
     pub(super) fn get_color_mask(&self, color: impl Into<usize>) -> &[[bool; N]; N] {
         &self.color_masks[color.into()]

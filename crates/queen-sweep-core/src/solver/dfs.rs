@@ -1,3 +1,5 @@
+//! A depth-first backtracking [`QueensSolver`].
+
 use std::{collections::HashSet, marker::PhantomData};
 
 use crate::{
@@ -7,6 +9,12 @@ use crate::{
     solver::{QueensSolveResult, QueensSolver},
 };
 
+/// A depth-first search solver with a configurable heuristic `H`.
+///
+/// The search explores valid queen placements in depth-first order, using
+/// [`QueensHeuristic::order_by_heuristic`] to order the placements tried at
+/// each step, and a [`HashSet`] of visited board states to avoid re-exploring
+/// equivalent positions.
 pub struct DepthFirstSearchSolver<const N: usize, H: QueensHeuristic<N>>
 where
     [(); N]: ValidBoardSize,
@@ -34,6 +42,11 @@ impl<const N: usize, H: QueensHeuristic<N>> DepthFirstSearchSolver<N, H>
 where
     [(); N]: ValidBoardSize,
 {
+    /// Recursively explores placements from `current_board`, returning the
+    /// first solution found (or `None`).
+    ///
+    /// `seen` deduplicates board states across the whole search, and
+    /// `num_states_visited` counts each distinct state examined.
     fn dfs_helper(
         current_board: QueensBoard<N>,
         seen: &mut HashSet<QueensBoard<N>>,

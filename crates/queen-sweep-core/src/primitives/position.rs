@@ -1,3 +1,4 @@
+/// A zero-based `(row, column)` coordinate on a board.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Position {
     row: usize,
@@ -5,31 +6,38 @@ pub struct Position {
 }
 
 impl Position {
+    /// Creates a new position from a row and column index.
     #[inline]
     pub const fn new(row: usize, col: usize) -> Self {
         Self { row, col }
     }
 
+    /// Returns the position as a `(row, column)` tuple.
     #[inline]
     pub const fn to_tuple(&self) -> (usize, usize) {
         (self.row, self.col)
     }
 
+    /// Returns the zero-based row index.
     #[inline]
     pub const fn row(&self) -> usize {
         self.row
     }
 
+    /// Returns the zero-based column index.
     #[inline]
     pub const fn col(&self) -> usize {
         self.col
     }
 
+    /// Returns `true` if the position lies within an `N×N` board.
     #[inline]
     pub const fn is_in_bounds<const N: usize>(&self) -> bool {
         self.row < N && self.col < N
     }
 
+    /// Returns the position offset by `(dr, dc)`, or `None` if the result lies
+    /// outside an `N×N` board or would underflow below zero.
     #[inline]
     pub const fn displace<const N: usize>(self, dr: i32, dc: i32) -> Option<Self> {
         let new_row = self.row as i32 + dr;

@@ -1,3 +1,10 @@
+//! The [`QueensBoard`] state type and its supporting logic.
+//!
+//! A [`QueensBoard`] tracks the queens placed so far and derives the set of
+//! blocked cells from them, combined with an immutable, shared color-region
+//! layout. It is the central state type consumed and produced by the
+//! [`crate::solver`].
+
 use crate::primitives::{Cell, Color, Position, ValidBoardSize};
 
 mod error;
@@ -6,6 +13,29 @@ mod immutable;
 
 pub use error::QueensPlacementError;
 
+/// A partially or fully solved Queens board of size `N`.
+///
+/// The board is immutable in spirit: mutating operations (placing a queen)
+/// return a new [`QueensBoard`] rather than modifying the receiver in place.
+///
+/// # Representation
+///
+/// - `blocked_mask`: which cells may no longer receive a queen.
+/// - `queen_col_per_row`: the column of the queen in each row, if any.
+/// - `queen_present_by_color`: whether each color region already has a queen.
+/// - `hash`: a cached hash of the queen placement (deterministic; equal boards
+///   have equal hashes).
+/// - `immutable_board_data`: the shared color-region layout.
+///
+/// The `blocked_mask` is always a derived view: it is fully determined by the
+/// queen placements and the (shared) color-region layout, and is maintained so
+/// that every unblocked cell is a currently valid placement.
+///
+/// # Equality
+///
+/// Two boards compare equal when their queen placements are identical, ignoring
+/// the derived `blocked_mask`, `queen_present_by_color`, `hash`, and
+/// `immutable_board_data`. See the [`PartialEq`] implementation for details.
 #[derive(Debug, Clone)]
 pub struct QueensBoard<const N: usize>
 where
@@ -57,41 +87,64 @@ where
         }
     }
 
+    /// Returns the board size `N`.
     #[inline]
     pub const fn get_size(&self) -> usize {
         N
     }
 
+    /// Returns the current blocked-cell mask.
+    ///
+    /// A `true` entry means the cell may not receive a queen.
     #[inline]
     pub const fn get_blocked_mask(&self) -> &[[bool; N]; N] {
         &self.blocked_mask
     }
 
+    /// Returns the per-row queen columns.
+    ///
+    /// Entry `r` is `Some(col)` if row `r` contains a queen in column `col`,
+    /// or `None` if the row has no queen yet.
     #[inline]
     pub const fn get_queen_col_per_row(&self) -> &[Option<usize>; N] {
         &self.queen_col_per_row
     }
 
+    /// Returns the cached hash of the queen placement.
+    ///
+    /// The hash is deterministic and consistent with [`PartialEq`]: equal
+    /// boards have equal hashes.
     #[inline]
     pub const fn get_hash(&self) -> u64 {
         self.hash
     }
 
+    /// Returns the color of the region containing `pos`.
     #[inline]
     pub fn get_color_at_pos(&self, pos: Position) -> Color {
         self.immutable_board_data.get_color_at_pos(pos)
     }
 
+    /// Returns the boolean mask of the given color region.
+    ///
+    /// The returned `N×N` array has a `true` entry at every cell belonging to
+    /// the color.
     #[inline]
     pub fn get_color_mask(&self, color: impl Into<usize>) -> &[[bool; N]; N] {
         &self.immutable_board_data.get_color_mask(color)
     }
 
+    /// Returns the full color-region layout: `color_regions[row][col]` is the
+    /// color of the cell at that position.
     #[inline]
     pub fn get_color_regions(&self) -> &[[Color; N]; N] {
         &self.immutable_board_data.get_color_regions()
     }
 
+    /// Returns the board as a grid of [`Cell`] values.
+    ///
+    /// Each cell is [`Cell::Empty`], [`Cell::Blocked`], or [`Cell::Queen`]
+    /// according to the current board state.
     pub fn get_cells(&self) -> [[Cell; N]; N] {
         let mut cells = [[Cell::Blocked; N]; N];
 
@@ -115,14 +168,28 @@ where
         cells
     }
 
+    /// Returns `true` if the given color region already contains a queen.
     pub fn queen_present_by_color(&self, color: impl Into<usize>) -> bool {
         self.queen_present_by_color[color.into()]
     }
 
+    /// Returns `true` if every row contains a queen.
+    ///
+    /// A solved board has exactly one queen per row; because queens also
+    /// enforce one-per-column and one-per-color during placement, this implies
+    /// the board is a complete, valid solution.
     pub fn is_solved(&self) -> bool {
         self.queen_col_per_row.iter().all(|c| c.is_some())
     }
 
+    /// Checks whether a queen may be placed at `pos` given the provided
+    /// `blocked_mask` and `queen_present_by_color`.
+    ///
+    /// This simulates the blocking a queen at `pos` would cause and rejects the
+    /// placement if it would strand any not-yet-filled color region (leaving it
+    /// with no remaining valid cell). It is used by
+    /// [`perform_exhaustive_blocking`](Self::perform_exhaustive_blocking) to
+    /// prune cells that cannot be part of any solution.
     fn placement_is_valid(
         &self,
         blocked_mask: &[[bool; N]; N],
@@ -194,6 +261,15 @@ where
         true
     }
 
+    /// Repeatedly blocks every cell that cannot be part of any solution, until
+    /// a fixpoint is reached.
+    ///
+    /// On each pass it marks any unblocked cell for which
+    /// [`placement_is_valid`](Self::placement_is_valid) returns `false` as
+    /// blocked, and stops once a full pass changes nothing. This is applied
+    /// automatically by [`place_queen`](Self::place_queen) and
+    /// [`place_queen_unchecked`](Self::place_queen_unchecked), so the returned
+    /// board's `blocked_mask` is always a fixpoint.
     fn perform_exhaustive_blocking(self) -> Self {
         let mut new_blocked_mask = self.blocked_mask.clone();
 
@@ -231,6 +307,16 @@ where
         }
     }
 
+    /// Places a queen at `pos`, returning the new board.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`QueensPlacementError::OutOfBounds`] if `pos` lies outside the
+    /// board, or [`QueensPlacementError::NonEmptyPlacementTarget`] if the cell
+    /// is already blocked.
+    ///
+    /// On success the returned board has recorded the queen, applied all
+    /// blocking, recomputed its hash, and run exhaustive blocking.
     pub fn place_queen(&self, pos: Position) -> Result<Self, QueensPlacementError> {
         let (r, c) = (pos.row(), pos.col());
 
@@ -312,6 +398,12 @@ where
         .perform_exhaustive_blocking()
     }
 
+    /// Returns every cell that is currently a valid placement, in row-major
+    /// order.
+    ///
+    /// A cell is a valid placement if it is not blocked. Because blocking is
+    /// maintained to a fixpoint, this is exactly the set of cells from which a
+    /// solution can still be reached.
     pub fn get_valid_placements(&self) -> Vec<Position> {
         let mut positions = Vec::with_capacity(N * N);
 

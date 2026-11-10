@@ -1,3 +1,15 @@
+//! Hashing of board state from queen placements.
+//!
+//! The hash is derived solely from `queen_col_per_row`, the per-row queen
+//! columns, and is therefore consistent with [`QueensBoard`]'s equality
+//! (which also depends only on queen placement).
+//!
+//! Two encodings are used, selected at compile time by board size:
+//!
+//! - For `N <= 15`, a collision-free positional encoding in base 16.
+//! - For `N >= 16`, a 64-bit FNV-1a hash (collisions are theoretically
+//!   possible, since `(N + 1)^N > 2^64`).
+
 /// Computes a 64-bit hash of the board state from per-row queen positions.
 ///
 /// # Strategy

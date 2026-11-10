@@ -4,6 +4,11 @@ use crate::{
     primitives::{Position, ValidBoardSize},
 };
 
+/// A no-op heuristic that assigns every placement the same score.
+///
+/// Ordering is therefore left unchanged, making this the identity
+/// [`QueensHeuristic`]: placements are tried in the order they are produced by
+/// the board.
 pub struct NoOpHeuristic;
 
 impl<const N: usize> QueensHeuristic<N> for NoOpHeuristic

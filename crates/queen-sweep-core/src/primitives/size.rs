@@ -1,3 +1,10 @@
+/// Marker trait for board sizes supported by [`QueensBoard`](crate::board::QueensBoard).
+///
+/// A board size `N` is valid only when the array type `[(); N]` implements
+/// this trait. Sizes `1` and `4..=16` are supported; any other size is
+/// rejected at compile time because `[(); N]` will not implement the trait.
+///
+/// This bound appears throughout the crate as `where [(); N]: ValidBoardSize`.
 pub trait ValidBoardSize {}
 
 impl ValidBoardSize for [(); 1] {}

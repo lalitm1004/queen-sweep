@@ -1,3 +1,9 @@
+//! Move-ordering heuristics for the solver.
+//!
+//! A [`QueensHeuristic`] scores candidate placements so that a solver can try
+//! the most promising ones first. The crate ships with the identity
+//! [`NoOpHeuristic`]; custom heuristics implement the trait.
+
 use crate::{
     board::QueensBoard,
     primitives::{Position, ValidBoardSize},
@@ -6,15 +12,24 @@ use crate::{
 mod noop;
 pub use noop::NoOpHeuristic;
 
+/// Orders candidate placements to guide a solver's search.
+///
+/// `score_placements` assigns a score to each candidate, and
+/// `order_by_heuristic` returns them sorted ascending by score.
 pub trait QueensHeuristic<const N: usize>
 where
     [(); N]: ValidBoardSize,
 {
+    /// Scores each valid placement, returning `(placement, score)` pairs.
     fn score_placements(
         valid_placements: Vec<Position>,
         board: &QueensBoard<N>,
     ) -> Vec<(Position, f32)>;
 
+    /// Returns the placements sorted ascending by score.
+    ///
+    /// Ties (including non-finite scores) are broken by treating them as
+    /// equal; the relative order of equal-scoring placements is unspecified.
     fn order_by_heuristic(placements: Vec<Position>, board: &QueensBoard<N>) -> Vec<Position> {
         let mut scored = Self::score_placements(placements, board);
         scored.sort_unstable_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
