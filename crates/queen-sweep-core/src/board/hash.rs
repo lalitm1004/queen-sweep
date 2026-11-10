@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_small_board_collision_freedom() {
-        seq_macro::seq!(N in 0..=5 {
+        seq_macro::seq!(N in 0..=8 {
             assert_collision_free_for_board_size::<N>();
         });
     }
@@ -260,5 +260,44 @@ mod tests {
         ];
 
         assert_eq!(compute_board_hash(&board), compute_board_hash(&board));
+    }
+
+    // ------------------------------------------------------------------
+    // Property-based injectivity (sampled) for the largest collision-free
+    // board size. Exercises the full RADIX_WEIGHTS range up to 16^14,
+    // which the exhaustive enumeration above only reaches up to 16^7.
+    // ------------------------------------------------------------------
+
+    /// Maps a sampled digit back to a queen placement: `N` encodes "no queen",
+    /// `0..N` encodes a queen in that column.
+    fn digits_to_placement<const N: usize>(digits: [usize; N]) -> [Option<usize>; N] {
+        digits.map(|d| if d == N { None } else { Some(d) })
+    }
+
+    fn assert_injective<const N: usize>(a: [usize; N], b: [usize; N]) {
+        let a_placement = digits_to_placement(a);
+        let b_placement = digits_to_placement(b);
+
+        if a_placement == b_placement {
+            return;
+        }
+
+        assert_ne!(
+            compute_board_hash(&a_placement),
+            compute_board_hash(&b_placement),
+            "distinct placements hashed identically: {a_placement:?} vs {b_placement:?}"
+        );
+    }
+
+    proptest::proptest! {
+        #[test]
+        fn test_hash_injective_on_distinct_placements_n15(
+            a in proptest::collection::vec(0usize..=15, 15),
+            b in proptest::collection::vec(0usize..=15, 15),
+        ) {
+            let a: [usize; 15] = a.try_into().unwrap();
+            let b: [usize; 15] = b.try_into().unwrap();
+            assert_injective::<15>(a, b);
+        }
     }
 }

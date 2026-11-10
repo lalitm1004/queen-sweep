@@ -21,3 +21,56 @@ where
         scored.into_iter().map(|(pos, _)| pos).collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::QueensHeuristic;
+    use crate::{
+        board::QueensBoard,
+        primitives::{Color, Position, ValidBoardSize},
+    };
+
+    /// A test-only heuristic that scores each placement by its column index,
+    /// so `order_by_heuristic` should return placements sorted by column.
+    struct ColumnScoreHeuristic;
+
+    impl<const N: usize> QueensHeuristic<N> for ColumnScoreHeuristic
+    where
+        [(); N]: ValidBoardSize,
+    {
+        fn score_placements(
+            valid_placements: Vec<Position>,
+            _board: &QueensBoard<N>,
+        ) -> Vec<(Position, f32)> {
+            valid_placements
+                .into_iter()
+                .map(|p| (p, p.col() as f32))
+                .collect()
+        }
+    }
+
+    fn board_4() -> QueensBoard<4> {
+        let regions: [[Color; 4]; 4] =
+            std::array::from_fn(|r| std::array::from_fn(|c| Color::from((r + c) % 4)));
+        unsafe { QueensBoard::new_unchecked(regions) }
+    }
+
+    #[test]
+    fn order_by_heuristic_sorts_ascending_by_score() {
+        let board = board_4();
+        let placements = board.get_valid_placements();
+
+        let ordered = ColumnScoreHeuristic::order_by_heuristic(placements.clone(), &board);
+
+        // Same set of placements is returned.
+        let mut expected: Vec<_> = placements.iter().map(|p| (p.row(), p.col())).collect();
+        let mut actual: Vec<_> = ordered.iter().map(|p| (p.row(), p.col())).collect();
+        expected.sort_unstable();
+        actual.sort_unstable();
+        assert_eq!(expected, actual);
+
+        // Positions are sorted ascending by column (their score).
+        let columns: Vec<usize> = ordered.iter().map(|p| p.col()).collect();
+        assert!(columns.windows(2).all(|w| w[0] <= w[1]));
+    }
+}

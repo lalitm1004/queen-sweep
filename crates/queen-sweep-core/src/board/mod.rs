@@ -401,6 +401,7 @@ const NEIGHBOR_DELTAS: [(i32, i32); 8] = [
 mod tests {
     use super::{QueensBoard, QueensPlacementError};
     use crate::primitives::{Cell, Color, Position};
+    use proptest::prelude::*;
     use std::collections::{HashMap, HashSet};
     use std::hash::{DefaultHasher, Hash, Hasher};
 
@@ -994,6 +995,131 @@ mod tests {
         // Every color ends up with exactly one queen.
         for color in 0usize..4 {
             assert!(solved.queen_present_by_color(color));
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Property-based tests
+    // ------------------------------------------------------------------
+
+    /// Builds an `N×N` color-region grid from a flat `N*N` slice.
+    fn regions_from_flat<const N: usize>(flat: &[usize]) -> [[Color; N]; N] {
+        std::array::from_fn(|row| std::array::from_fn(|col| Color::from(flat[row * N + col])))
+    }
+
+    /// Places the first `n` valid placements (row-major order) via `place_queen`,
+    /// producing an arbitrarily-developed board state.
+    fn place_first_n<const N: usize>(mut board: QueensBoard<N>, n: usize) -> QueensBoard<N>
+    where
+        [(); N]: crate::primitives::ValidBoardSize,
+    {
+        for _ in 0..n {
+            let Some(&pos) = board.get_valid_placements().first() else {
+                break;
+            };
+            board = board.place_queen(pos).unwrap();
+        }
+        board
+    }
+
+    proptest! {
+        /// `place_queen` succeeds exactly for in-bounds, unblocked cells, and
+        /// reports the correct error variant otherwise — for arbitrary layouts
+        /// and arbitrary prior placement sequences.
+        #[test]
+        fn test_place_queen_ok_iff_unblocked(
+            flat in proptest::collection::vec(0usize..4, 16),
+            num_placements in 0usize..8,
+            row in 0usize..=4,
+            col in 0usize..=4,
+        ) {
+            let regions = regions_from_flat::<4>(&flat);
+            let board = unsafe { QueensBoard::new_unchecked(regions) };
+            let board = place_first_n(board, num_placements);
+
+            let result = board.place_queen(Position::new(row, col));
+
+            if row >= 4 || col >= 4 {
+                assert!(matches!(result, Err(QueensPlacementError::OutOfBounds { .. })));
+            } else if board.blocked_mask[row][col] {
+                assert!(matches!(
+                    result,
+                    Err(QueensPlacementError::NonEmptyPlacementTarget { .. })
+                ));
+            } else {
+                assert!(result.is_ok());
+            }
+        }
+
+        /// After any valid placement, the queen is recorded, its row/column/
+        /// neighbors/color-region are blocked, the hash is recomputed, and
+        /// exhaustive blocking is at a fixpoint.
+        #[test]
+        fn test_place_queen_invariants(
+            flat in proptest::collection::vec(0usize..5, 25),
+            num_placements in 0usize..6,
+        ) {
+            let regions = regions_from_flat::<5>(&flat);
+            let mut board = unsafe { QueensBoard::new_unchecked(regions) };
+
+            for _ in 0..num_placements {
+                let Some(&pos) = board.get_valid_placements().first() else {
+                    break;
+                };
+
+                let color = board.get_color_at_pos(pos);
+                let placed = board.place_queen(pos).unwrap();
+                let (r, c) = pos.to_tuple();
+
+                // Queen and its color are recorded.
+                assert_eq!(placed.queen_col_per_row[r], Some(c));
+                assert!(placed.queen_present_by_color(usize::from(color)));
+
+                // Row and column are fully blocked.
+                for i in 0..5 {
+                    assert!(placed.blocked_mask[r][i], "({}, {}) should be blocked", r, i);
+                    assert!(placed.blocked_mask[i][c], "({}, {}) should be blocked", i, c);
+                }
+
+                // All eight neighbors are blocked.
+                for (dr, dc) in super::NEIGHBOR_DELTAS {
+                    if let Some(n) = pos.displace::<5>(dr, dc) {
+                        assert!(
+                            placed.blocked_mask[n.row()][n.col()],
+                            "neighbor ({}, {}) should be blocked",
+                            n.row(),
+                            n.col()
+                        );
+                    }
+                }
+
+                // The entire color region is blocked.
+                let mask = board.get_color_mask(usize::from(color));
+                for rr in 0..5 {
+                    for cc in 0..5 {
+                        if mask[rr][cc] {
+                            assert!(
+                                placed.blocked_mask[rr][cc],
+                                "color-region cell ({}, {}) should be blocked",
+                                rr,
+                                cc
+                            );
+                        }
+                    }
+                }
+
+                // Hash is recomputed from queen placements.
+                assert_eq!(
+                    placed.get_hash(),
+                    super::hash::compute_board_hash(&placed.queen_col_per_row)
+                );
+
+                // Exhaustive blocking is at a fixpoint.
+                let once_more = placed.clone().perform_exhaustive_blocking();
+                assert_eq!(once_more.blocked_mask, placed.blocked_mask);
+
+                board = placed;
+            }
         }
     }
 }
