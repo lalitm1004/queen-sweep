@@ -3,6 +3,9 @@ use crate::{
     primitives::{Position, ValidBoardSize},
 };
 
+mod noop;
+pub use noop::NoOpHeuristic;
+
 pub trait QueensHeuristic<const N: usize>
 where
     [(); N]: ValidBoardSize,
