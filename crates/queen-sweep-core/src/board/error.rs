@@ -15,8 +15,8 @@ pub enum QueensPlacementError {
 
 /// Errors returned when a board cannot be initialized with the given color regions.
 ///
-/// This type is produced by [`QueensBoard::new`] and implements
-/// [`std::error::Error`] via [`thiserror`].
+/// This type is produced by [`QueensBoard::new`](crate::board::QueensBoard::new)
+/// and implements [`std::error::Error`] via [`thiserror`].
 #[derive(Debug, thiserror::Error)]
 pub enum BoardInitError {
     /// A color index is greater than or equal to N.

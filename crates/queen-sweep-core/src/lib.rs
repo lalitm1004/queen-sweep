@@ -15,8 +15,12 @@
 //! - [`heuristic`]: move-ordering heuristics via the [`heuristic::QueensHeuristic`]
 //!   trait.
 //! - [`solver`]: backtracking search via [`solver::DepthFirstSearchSolver`].
+//! - [`dynamic`]: a runtime, type-erased interface ([`dynamic::DynamicSolver`])
+//!   that accepts color regions as plain `Vec`s and dispatches to the
+//!   compile-time solver.
 
 pub mod board;
+pub mod dynamic;
 pub mod heuristic;
 pub mod primitives;
 pub mod solver;
