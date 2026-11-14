@@ -42,7 +42,11 @@ mod tests {
     #[test]
     fn score_placements_is_all_zero() {
         let board = board_4();
-        let placements = vec![Position::new(0, 0), Position::new(1, 2), Position::new(3, 3)];
+        let placements = vec![
+            Position::new(0, 0),
+            Position::new(1, 2),
+            Position::new(3, 3),
+        ];
 
         let scored = NoOpHeuristic::score_placements(placements.clone(), &board);
 

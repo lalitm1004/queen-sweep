@@ -9,8 +9,11 @@ use crate::{
     primitives::{Position, ValidBoardSize},
 };
 
-mod noop;
-pub use noop::NoOpHeuristic;
+mod no_op;
+pub use no_op::NoOpHeuristic;
+
+mod smallest_region_first;
+pub use smallest_region_first::SmallestRegionFirstHeuristic;
 
 /// Orders candidate placements to guide a solver's search.
 ///
@@ -19,6 +22,7 @@ pub use noop::NoOpHeuristic;
 pub trait QueensHeuristic<const N: usize>
 where
     [(); N]: ValidBoardSize,
+    Self: Sized,
 {
     /// Scores each valid placement, returning `(placement, score)` pairs.
     fn score_placements(

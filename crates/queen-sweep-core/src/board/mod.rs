@@ -168,6 +168,18 @@ where
         cells
     }
 
+    pub fn get_queen_positions(&self) -> Vec<Position> {
+        let mut positions = Vec::with_capacity(N);
+
+        for row in 0..N {
+            if let Some(queen_col) = self.queen_col_per_row[row] {
+                positions.push(Position::new(row, queen_col));
+            }
+        }
+
+        positions
+    }
+
     /// Returns `true` if the given color region already contains a queen.
     pub fn queen_present_by_color(&self, color: impl Into<usize>) -> bool {
         self.queen_present_by_color[color.into()]
