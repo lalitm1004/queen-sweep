@@ -11,7 +11,7 @@ mod error;
 mod hash;
 mod immutable;
 
-pub use error::QueensPlacementError;
+pub use error::{BoardInitError, QueensPlacementError};
 
 /// A partially or fully solved Queens board of size `N`.
 ///
@@ -56,6 +56,53 @@ impl<const N: usize> QueensBoard<N>
 where
     [(); N]: ValidBoardSize,
 {
+    /// Creates an empty `QueensBoard` with the given color regions.
+    ///
+    /// Validates that all color indices are within `0..N` and that exactly `N`
+    /// distinct colors are present before initializing the board.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`BoardInitError::ColorOutOfRange`] if any color index is greater
+    /// than or equal to `N`.
+    ///
+    /// Returns [`BoardInitError::InvalidColorCount`] if the color regions do not
+    /// contain exactly `N` distinct colors.
+    ///
+    /// [`QueensBoard::new_unchecked`].
+    pub fn new(color_regions: [[Color; N]; N]) -> Result<Self, BoardInitError> {
+        let mut color_present = [false; N];
+        let mut distinct_color_count = 0;
+
+        for row in &color_regions {
+            for &color in row {
+                let color: usize = color.into();
+
+                if color >= N {
+                    return Err(BoardInitError::ColorOutOfRange {
+                        color,
+                        max_colors: N,
+                    });
+                }
+
+                if !color_present[color] {
+                    color_present[color] = true;
+                    distinct_color_count += 1;
+                }
+            }
+        }
+
+        if distinct_color_count != N {
+            return Err(BoardInitError::InvalidColorCount {
+                expected: N,
+                found: distinct_color_count,
+            });
+        }
+
+        // SAFETY: Validation is done before calling unchecked builder
+        Ok(unsafe { Self::new_unchecked(color_regions) })
+    }
+
     /// Creates an empty `QueensBoard` with the given color regions, without
     /// validating the region data.
     ///

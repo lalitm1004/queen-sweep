@@ -5,7 +5,7 @@
 /// [`Into`].
 ///
 /// [`Color`] is a thin wrapper that performs no validation: it is the
-/// responsibility of [`QueensBoard::new_unchecked`](crate::board::QueensBoard::new_unchecked)
+/// responsibility of [`QueensBoard::new`](crate::board::QueensBoard::new)
 /// to guarantee that every color index is strictly less than the board size.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Color {

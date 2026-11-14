@@ -12,3 +12,18 @@ pub enum QueensPlacementError {
     #[error("Target coordinates ({r}, {c}) are out of bounds.")]
     OutOfBounds { r: usize, c: usize },
 }
+
+/// Errors returned when a board cannot be initialized with the given color regions.
+///
+/// This type is produced by [`QueensBoard::new`] and implements
+/// [`std::error::Error`] via [`thiserror`].
+#[derive(Debug, thiserror::Error)]
+pub enum BoardInitError {
+    /// A color index is greater than or equal to N.
+    #[error("Color index {color} is out of bounds. Expected a value in 0..{max_colors}.")]
+    ColorOutOfRange { color: usize, max_colors: usize },
+
+    /// The color regions do not contain exactly N distinct colors.
+    #[error("Invalid number of distinct colors. Expected {expected}, found {found}.")]
+    InvalidColorCount { expected: usize, found: usize },
+}
