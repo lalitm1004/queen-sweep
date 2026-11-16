@@ -150,8 +150,8 @@ impl QueensSolverConstructor {
         match n {
             1 => Self::build_for::<1>(grid, solver, heuristic),
 
-            4..=16 => {
-                seq_macro::seq! {N in 4..=16 {
+            4..=18 => {
+                seq_macro::seq! {N in 4..=18 {
                     match n {
                         #(N => Self::build_for::<N>(grid, solver, heuristic),)*
                         _ => unreachable!()

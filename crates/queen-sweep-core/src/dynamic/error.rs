@@ -18,7 +18,7 @@ pub enum DynamicSolverError {
     NotPerfectSquare(usize),
 
     /// The board size is not supported.
-    #[error("board size {0} is not supported (supported sizes: 1 and 4..=16)")]
+    #[error("board size {0} is not supported (supported sizes: 1 and 4..=18)")]
     UnsupportedSize(usize),
 
     /// The color regions failed board initialization (a color index out of

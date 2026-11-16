@@ -1,7 +1,7 @@
 /// Marker trait for board sizes supported by [`QueensBoard`](crate::board::QueensBoard).
 ///
 /// A board size `N` is valid only when the array type `[(); N]` implements
-/// this trait. Sizes `1` and `4..=16` are supported; any other size is
+/// this trait. Sizes `1` and `4..=18` are supported; any other size is
 /// rejected at compile time because `[(); N]` will not implement the trait.
 ///
 /// This bound appears throughout the crate as `where [(); N]: ValidBoardSize`.
@@ -9,7 +9,7 @@ pub trait ValidBoardSize {}
 
 impl ValidBoardSize for [(); 1] {}
 
-seq_macro::seq!(N in 4..=16 {
+seq_macro::seq!(N in 4..=18 {
     impl ValidBoardSize for [(); N] {}
 });
 
@@ -35,5 +35,7 @@ mod tests {
         assert_valid_board_size::<[(); 14]>();
         assert_valid_board_size::<[(); 15]>();
         assert_valid_board_size::<[(); 16]>();
+        assert_valid_board_size::<[(); 17]>();
+        assert_valid_board_size::<[(); 18]>();
     }
 }

@@ -219,4 +219,18 @@ mod tests {
 
         assert!(matches!(err, DynamicSolverError::NotPerfectSquare(3)));
     }
+
+    #[test]
+    fn supports_eighteen_by_eighteen_boards() {
+        let n = 18;
+        // Column-stripe layout: each column is its own color.
+        let flat: Vec<usize> = (0..n).flat_map(|_| 0..n).collect();
+
+        QueensSolverConstructor::build_flat(
+            flat,
+            SolverOption::DFSSolver,
+            HeuristicOption::SmallestRegionFirstHeuristic,
+        )
+        .expect("18x18 board should build");
+    }
 }

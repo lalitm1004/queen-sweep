@@ -65,7 +65,7 @@ board.
 
 ## Notes
 
-- The solver supports board sizes `1` and `4..=16`; other sizes return
+- The solver supports board sizes `1` and `4..=18`; other sizes return
   `UNSUPPORTED_SIZE`.
 - Manifest V3 requires `'wasm-unsafe-eval'` in `extension_pages` CSP for
   WebAssembly instantiation.
