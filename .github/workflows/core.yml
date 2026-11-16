@@ -1,0 +1,29 @@
+name: Core
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/queen-sweep-core/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  pull_request:
+    paths:
+      - "crates/queen-sweep-core/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run tests
+        run: cargo test -p queen-sweep-core

@@ -1,0 +1,47 @@
+name: WASM
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/queen-sweep-wasm/**"
+      - "crates/queen-sweep-core/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  pull_request:
+    paths:
+      - "crates/queen-sweep-wasm/**"
+      - "crates/queen-sweep-core/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (wasm32)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Host tests
+        run: cargo test -p queen-sweep-wasm
+
+      - name: WASM tests
+        working-directory: crates/queen-sweep-wasm
+        run: wasm-pack test --node
