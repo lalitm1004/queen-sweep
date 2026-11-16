@@ -1,0 +1,89 @@
+name: Release Extension
+
+on:
+  push:
+    tags:
+      - "extension-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. extension-v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (wasm32)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+
+      - name: Install binaryen (wasm-opt)
+        run: sudo apt-get update && sudo apt-get install -y binaryen
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: queen-sweep-extension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: queen-sweep-extension
+        run: npm ci
+
+      - name: Build extension
+        working-directory: queen-sweep-extension
+        run: npm run build
+
+      - name: Verify version matches tag
+        if: github.event_name == 'push'
+        working-directory: queen-sweep-extension
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./dist/manifest.json').version")
+          if [ "${GITHUB_REF_NAME}" != "extension-v${VERSION}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match manifest version extension-v${VERSION}"
+            exit 1
+          fi
+
+      - name: Package extension
+        working-directory: queen-sweep-extension
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./dist/manifest.json').version")
+          NAME="queen-sweep-extension-v${VERSION}"
+          mkdir -p "../release/${NAME}"
+          cp -a dist/. "../release/${NAME}/"
+          (cd ../release && zip -r "../${NAME}.zip" "${NAME}")
+          echo "Packaged ${NAME}.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          files: queen-sweep-extension-v*.zip
+          generate_release_notes: true
+          body: |
+            ## QueenSweep extension
+
+            Download `queen-sweep-extension-v*.zip`, unzip it, then:
+
+            1. Open `chrome://extensions/` (or `brave://extensions/`) and enable **Developer mode**
+            2. Click **Load unpacked** and select the extracted folder
+
+            Built from the [`queen-sweep-wasm`](https://github.com/lalitm1004/queen-sweep/tree/main/crates/queen-sweep-wasm) solver.
