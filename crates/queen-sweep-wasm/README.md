@@ -1,8 +1,14 @@
 # queen-sweep-wasm
 
-Thin, type-safe WebAssembly bindings for [`queen-sweep-core`](../queen-sweep-core). It wraps the runtime `dynamic` solver API with `wasm-bindgen` and generates TypeScript declarations via `tsify`, so the bindings are seamless to consume from TypeScript.
+The WASM layer for the core solver engine. Wraps the runtime `dynamic` API from [`queen-sweep-core`](../queen-sweep-core) with `wasm-bindgen` and generates TypeScript declarations via `tsify`, enabling typed, in-browser (or in-extension) puzzle solving.
 
-The crate is environment-agnostic (no DOM / `web-sys`), so it runs equally well in a Chrome extension service worker, an offscreen document, or a content script's isolated world.
+The crate is environment-agnostic (no DOM / `web-sys`), so it runs equally well in a Chromium extension service worker, an offscreen document, or a content script's isolated world.
+
+## Overview
+
+- `buildFromGrid` / `buildFromFlat` construct a reusable `WasmSolver`.
+- `WasmSolver.solve()` returns a typed `SolveResult` with the queen positions and board state.
+- Invalid input throws a structured `BuildError` with a stable `code`.
 
 ## API
 
@@ -20,7 +26,7 @@ export enum CellKind { Empty = 0, Blocked = 1, Queen = 2 }
 export interface GridInput { regions: number[][] }
 ```
 
-`buildFromGrid` takes a `GridInput` (nested arrays travel through serde). `buildFromFlat` takes a flat, row-major `number[]`/`Uint32Array` (no `GridInput` wrapper needed).
+`buildFromGrid` takes a `GridInput` (nested arrays travel through serde). `buildFromFlat` takes a flat, row-major `number[]`/`Uint32Array` and needs no wrapper.
 
 ### Output
 
@@ -53,7 +59,7 @@ export interface BuildError {
 }
 ```
 
-### Functions & class
+### Functions and Class
 
 ```ts
 export function buildFromGrid(grid: GridInput, solver: SolverKind, heuristic: HeuristicKind): WasmSolver;
@@ -65,18 +71,18 @@ export class WasmSolver {
 }
 ```
 
-`WasmSolver` is reusable — call `solve()` as many times as needed. Call `free()` (or use `using`/`Symbol.dispose`) when done.
+`WasmSolver` is reusable - call `solve()` as many times as needed. Call `free()` (or use `using` / `Symbol.dispose`) when done.
 
 ## Build
 
-```sh
+```bash
 wasm-pack build --target web
 # or: --target bundler
 ```
 
 This produces `pkg/` with `queen_sweep_wasm.js`, `queen_sweep_wasm_bg.wasm`, and `queen_sweep_wasm.d.ts`.
 
-## Usage (TypeScript)
+## Usage Example
 
 ```ts
 import init, {
@@ -105,30 +111,33 @@ try {
   }
 } catch (e) {
   const err = e as BuildError;
-  console.error(`build failed: ${err.code} — ${err.message}`);
+  console.error(`build failed: ${err.code} - ${err.message}`);
 }
 ```
 
-## Chrome extension notes
+## Chrome Extension Notes
 
 - Manifest V3 requires `'wasm-unsafe-eval'` to compile WebAssembly:
+
   ```json
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   }
   ```
-- Prefer running the solver in the **background service worker** or an **offscreen document**, then message results to the content script (page CSP / isolated-world restrictions can block Wasm).
+
+- Prefer running the solver in the **background service worker** or an **offscreen document**, then message results to the content script. Page CSP and isolated-world restrictions can block Wasm from content scripts.
 - With `--target web`, initialize from the extension's own URL:
+
   ```ts
   await init(chrome.runtime.getURL("wasm/queen_sweep_wasm_bg.wasm"));
   ```
 
-## Board size support
+## Board Size Support
 
-The underlying solver supports sizes `1` and `4..=18`. Other sizes throw `BuildError` with code `UNSUPPORTED_SIZE`.
+The underlying solver supports sizes `1` and `4..=18`. Any other size throws a `BuildError` with code `UNSUPPORTED_SIZE`.
 
 ## Testing
 
-```sh
+```bash
 wasm-pack test --node
 ```

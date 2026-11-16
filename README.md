@@ -1,96 +1,99 @@
-<img src=".github/assets/queen-sweep-logo.png" alt="QueenSweep logo" width="120" />
+![Queen Sweep Logo](.github/assets/queen-sweep-logo.png)
 
 # ♛ QueenSweep
 
-**QueenSweep** is a high-performance solver for the [Queens puzzle](https://www.linkedin.com/showcase/queens-game) — a Rust depth-first-search engine, compiled to WebAssembly, and delivered through a Manifest V3 Chromium extension that solves puzzles directly in the browser.
+**QueenSweep** is a high-performance solver for [LinkedIn's Queens](https://www.linkedin.com/showcase/queens-game), featuring a Rust-based depth first search engine, WebAssembly compilation, and a Chromium extension for seamless in-browser solving.
 
 > [!NOTE]
-> LinkedIn prohibits automated interaction with its platform, so the Chromium extension targets the open-source [QueensGame](https://queensgame.vercel.app) site instead.
+> Because LinkedIn prohibits automated interaction with its platform, the Chromium extension is only supported on the [QueensGame website](https://queensgame.vercel.app) created by [samimsu](https://github.com/samimsu)
 
 ## 📋 Table of Contents
-
 1. [Features](#-features)
-2. [Demo](#-demo)
-3. [Architecture](#️-architecture)
-4. [Project Structure](#-project-structure)
+2. [Architecture](#️-architecture)
+3. [Project Structure](#-project-structure)
+4. [Install from GitHub Releases](#-install-from-github-releases)
 5. [Running Locally](#-running-locally)
-6. [Releases](#-releases)
 
 ## 📃 Features
-
-- **🚀 Blazingly fast** — solves most boards in a few milliseconds via depth-first search with aggressive constraint propagation.
-- **📐 Const-generic core** — the board is sized at compile time (`N`), with a runtime `dynamic` layer that dispatches `Vec`-based input to the appropriate monomorphization.
-- **🧠 Heuristic-driven search** — pluggable move-ordering heuristics (`NoOp`, `SmallestRegionFirst`) that prune the search space.
-- **🌐 WebAssembly runtime** — `wasm-bindgen` + `tsify` produce fully typed `.d.ts` declarations for seamless TypeScript use.
-- **🛰️ Integrated browser extension** — detects QueensGame puzzles, extracts the board, and applies the solution with one click.
-
-## 👾 Demo
-
-![QueenSweep demo](.github/assets/demo.gif)
+- **🚀 Blazingly Fast**: Solves the majority of boards in a few milliseconds with depth-first search and aggressive constraint propagation
+- **📐 Const-Generic Core**: The board is sized at compile time, with a runtime `dynamic` layer that dispatches `Vec` input to the right monomorphization
+- **🧠 Heuristic-Driven Search**: Pluggable, configurable heuristics (`NoOp`, `SmallestRegionFirst`) to aggressively prune the search space
+- **🌐 WebAssembly Runtime**: Compiled from Rust for near-native execution speed directly in the browser, with generated TypeScript types
+- **🛰️ Integrated Browser Extension**: One-click solver injected directly in to the puzzle website
 
 ## 🏗️ Architecture
 
-```mermaid
-flowchart LR
-    subgraph Rust
-        Core["queen-sweep-core<br/>const-generic board · DFS · heuristics"]
-        Wasm["queen-sweep-wasm<br/>wasm-bindgen + tsify"]
-        Core --> Wasm
-    end
-    Ext["queen-sweep-extension<br/>MV3 service worker + content script"]
-    Site["QueensGame site"]
-    Wasm --> Ext
-    Ext -->|"solve + apply"| Site
+```text
+queen-sweep-core  ->  queen-sweep-wasm  ->  queen-sweep-extension  ->  QueensGame
+(board, DFS,           (wasm-bindgen +       (service worker +          (puzzle site)
+ heuristics,            tsify types)          content script)
+ dynamic API)
 ```
 
 ## 📂 Project Structure
-
 ```sh
+# All major sub-directories
 queen-sweep/
 ├── crates/
-│   ├── queen-sweep-core/      # Core Rust engine (+ runtime `dynamic` API)
-│   └── queen-sweep-wasm/      # Type-safe WebAssembly bindings
-└── queen-sweep-extension/     # Manifest V3 Chromium extension
+│   ├── queen-sweep-core/      # Core rust engine (+ runtime `dynamic` API)
+│   └── queen-sweep-wasm/      # WASM bindings (TypeScript types)
+└── queen-sweep-extension/     # Chromium extension
 ```
 
-Each subproject has its own README with full documentation:
+Each directory contains its own README with detailed information:
+- [Core Engine](./crates/queen-sweep-core/README.md)
+- [WASM Bindings](./crates/queen-sweep-wasm/README.md)
+- [Web Extension](./queen-sweep-extension/README.md)
 
-- [Core engine](./crates/queen-sweep-core/README.md)
-- [WebAssembly bindings](./crates/queen-sweep-wasm/README.md)
-- [Browser extension](./queen-sweep-extension/README.md)
+## 📦 Install from GitHub Releases
+
+Grab the prebuilt extension straight from the [Releases](https://github.com/lalitm1004/queen-sweep/releases) page - no build step required.
+
+1. Open the [Releases](https://github.com/lalitm1004/queen-sweep/releases) page
+2. Download the latest `queen-sweep-extension-v*.zip`
+3. Unzip it
+4. Navigate to `chrome://extensions/` (or `brave://extensions/`)
+5. Enable `Developer mode`
+6. Click `Load unpacked` and select the unzipped folder
 
 ## 💻 Running Locally
+Ensure the following prerequisites are available:
+- [Rust](https://rustup.rs/)
+- [Node.js](https://nodejs.org)
+- [wasm-pack](https://github.com/drager/wasm-pack)
 
-Prerequisites: [Rust](https://rustup.rs/), [Node.js](https://nodejs.org), and [wasm-pack](https://github.com/drager/wasm-pack). The repo also ships a Nix devshell that provides all of them (plus the `wasm32-unknown-unknown` target and `binaryen`):
+> [!TIP]
+> The repository ships a Nix devshell that provides Rust, the `wasm32-unknown-unknown` target, `wasm-pack`, `binaryen`, and Node.js. Run `nix develop` to enter it.
 
+### Installing the Chromium Extension
+
+1. Clone the repository
 ```bash
-nix develop
-cargo test --workspace
+git clone https://github.com/lalitm1004/queen-sweep.git
+cd queen-sweep
 ```
 
-### Core engine
+2. Build the WASM module
+```bash
+cd queen-sweep-extension
+npm run build:wasm
+```
 
+3. Build the extension
+```bash
+npm i
+npm run build
+```
+
+4. Load in Chrome
+   - Navigate to `brave://extensions/` **or** your extension manager
+   - Enable `Developer mode`
+   - Click `Load unpacked`
+   - Select the `queen-sweep-extension/dist` directory
+
+### Running the core engine
 ```bash
 cargo test -p queen-sweep-core
 ```
 
-### WebAssembly bindings
-
-```bash
-cd crates/queen-sweep-wasm
-wasm-pack build --target web
-```
-
-### Browser extension
-
-```bash
-cd queen-sweep-extension
-npm install
-npm run build
-```
-
-Then open `chrome://extensions/` (or `brave://extensions/`), enable **Developer mode**, click **Load unpacked**, and select `queen-sweep-extension/dist`.
-
-## 📦 Releases
-
-Download the latest `queen-sweep-extension-v*.zip` from the [Releases](https://github.com/lalitm1004/queen-sweep/releases) page, unzip it, and load the extracted folder as an unpacked extension.
+The core exposes both a const-generic API (`QueensBoard<N>`) and a runtime `dynamic` API. See the [Core Engine README](./crates/queen-sweep-core/README.md) for a complete usage example.
