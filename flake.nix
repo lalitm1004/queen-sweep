@@ -35,6 +35,7 @@
             "clippy"
             "rustfmt"
           ];
+          targets = [ "wasm32-unknown-unknown" ];
         };
     in
     {
@@ -47,7 +48,12 @@
         in
         {
           default = pkgs.mkShell {
-            packages = [ (mkToolchain pkgs) ];
+            packages = [
+              (mkToolchain pkgs)
+              pkgs.wasm-pack
+              pkgs.binaryen # provides wasm-opt
+              pkgs.nodejs # for `wasm-pack test --node`
+            ];
           };
         }
       );

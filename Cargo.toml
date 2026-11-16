@@ -1,3 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["crates/queen-sweep-core"]
+members = ["crates/queen-sweep-core", "crates/queen-sweep-wasm"]
+
+# `tsify`/`wasm-bindgen` types must survive linking into the generated `.d.ts`.
+[profile.release]
+codegen-units = 1

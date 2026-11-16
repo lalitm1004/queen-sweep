@@ -27,3 +27,6 @@ rustc-ice-*.txt
 result
 result-*
 
+
+# wasm-pack output
+pkg
