@@ -3,11 +3,11 @@ name: Release Extension
 on:
   push:
     tags:
-      - "extension-v*"
+      - "queen-sweep-extension-v*"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (e.g. extension-v0.1.0)"
+        description: "Release tag (e.g. queen-sweep-extension-v0.1.0)"
         required: true
 
 permissions:
@@ -56,8 +56,8 @@ jobs:
         run: |
           set -euo pipefail
           VERSION=$(node -p "require('./dist/manifest.json').version")
-          if [ "${GITHUB_REF_NAME}" != "extension-v${VERSION}" ]; then
-            echo "::error::Tag ${GITHUB_REF_NAME} does not match manifest version extension-v${VERSION}"
+          if [ "${GITHUB_REF_NAME}" != "queen-sweep-extension-v${VERSION}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match manifest version queen-sweep-extension-v${VERSION}"
             exit 1
           fi
 

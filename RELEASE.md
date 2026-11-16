@@ -22,17 +22,17 @@ against the tag.
 3. Tag and push the tag:
 
 ```sh
-git tag extension-v0.1.0
-git push origin extension-v0.1.0
+git tag queen-sweep-extension-v0.1.0
+git push origin queen-sweep-extension-v0.1.0
 ```
 
-The tag must be `extension-v<version>`. If it does not match the manifest
-version, the workflow fails before publishing.
+The tag must be `queen-sweep-extension-v<version>`. If it does not match the
+manifest version, the workflow fails before publishing.
 
 ## Workflow
 
-`.github/workflows/release-extension.yml` runs on tags matching `extension-v*`
-and:
+`.github/workflows/release-extension.yml` runs on tags matching
+`queen-sweep-extension-v*` and:
 
 1. installs Rust, the `wasm32-unknown-unknown` target, `wasm-pack`, `binaryen`,
    and Node.js
@@ -47,7 +47,7 @@ and:
 Start the workflow from the Actions tab, or with the CLI:
 
 ```sh
-gh workflow run "Release Extension" -f tag=extension-v0.1.0
+gh workflow run "Release Extension" -f tag=queen-sweep-extension-v0.1.0
 ```
 
 Manual runs skip the tag/version check.
@@ -56,7 +56,7 @@ Manual runs skip the tag/version check.
 
 ```sh
 gh run list --workflow "Release Extension"
-gh release view extension-v0.1.0
+gh release view queen-sweep-extension-v0.1.0
 ```
 
 The downloadable asset is `queen-sweep-extension-v<version>.zip`. Users unzip
