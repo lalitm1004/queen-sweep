@@ -19,19 +19,41 @@ pub struct SolveResult {
     /// The solved board as numeric `CellKind` values, or `undefined` if no
     /// solution was found.
     pub board: Option<Vec<Vec<u8>>>,
+    /// The queen positions as `[row, column]` pairs (empty if unsolved).
+    pub queens: Vec<[u32; 2]>,
 }
 
 impl From<DynamicSolveResult> for SolveResult {
     fn from(result: DynamicSolveResult) -> Self {
+        let solved_board = result.solved_board;
+        let solved = solved_board.is_some();
+
+        let board = solved_board.as_ref().map(|grid| {
+            grid.iter()
+                .map(|row| row.iter().map(|&cell| cell_to_u8(cell)).collect())
+                .collect()
+        });
+
+        let queens = solved_board
+            .as_ref()
+            .map(|grid| {
+                grid.iter()
+                    .enumerate()
+                    .flat_map(|(row, cells)| {
+                        cells.iter().enumerate().filter_map(move |(col, &cell)| {
+                            (cell == Cell::Queen).then_some([row as u32, col as u32])
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
         Self {
             size: result.size,
             num_states_visited: result.num_states_visited,
-            solved: result.solved_board.is_some(),
-            board: result.solved_board.map(|grid| {
-                grid.into_iter()
-                    .map(|row| row.into_iter().map(cell_to_u8).collect())
-                    .collect()
-            }),
+            solved,
+            board,
+            queens,
         }
     }
 }

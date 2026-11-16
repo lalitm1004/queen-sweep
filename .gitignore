@@ -27,6 +27,10 @@ rustc-ice-*.txt
 result
 result-*
 
-
 # wasm-pack output
 pkg
+
+# Web extension (Node)
+node_modules/
+queen-sweep-extension/dist/
+queen-sweep-extension/src/wasm/

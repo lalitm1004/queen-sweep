@@ -15,11 +15,13 @@
 //! in a Chrome extension service worker, an offscreen document, or a content
 //! script's isolated world.
 
+mod error;
 mod input;
 mod options;
 mod result;
 mod solver;
 
+pub use error::{BuildError, BuildErrorCode};
 pub use input::GridInput;
 pub use options::{CellKind, HeuristicKind, SolverKind};
 pub use result::SolveResult;

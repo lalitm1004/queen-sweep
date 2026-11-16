@@ -46,6 +46,7 @@ fn solves_quadrant_from_grid() {
         .filter(|&&cell| cell == CellKind::Queen as u8)
         .count();
     assert_eq!(queens, 4);
+    assert_eq!(result.queens.len(), 4);
 }
 
 #[wasm_bindgen_test]

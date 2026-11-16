@@ -5,6 +5,7 @@ use tsify::{Ts, Tsify};
 use wasm_bindgen::prelude::*;
 
 use crate::{
+    error::{BuildError, BuildErrorCode},
     input::GridInput,
     options::{HeuristicKind, SolverKind},
     result::SolveResult,
@@ -36,10 +37,13 @@ pub fn build_from_grid(
     grid: Ts<GridInput>,
     solver: SolverKind,
     heuristic: HeuristicKind,
-) -> Result<WasmSolver, JsError> {
-    let grid = grid
-        .to_rust()
-        .map_err(|err| JsError::new(&format!("invalid grid input: {err}")))?;
+) -> Result<WasmSolver, BuildError> {
+    let grid = grid.to_rust().map_err(|err| {
+        BuildError::new(
+            BuildErrorCode::InvalidInput,
+            format!("invalid grid input: {err}"),
+        )
+    })?;
 
     let regions = grid
         .regions
@@ -49,7 +53,7 @@ pub fn build_from_grid(
 
     QueensSolverConstructor::build_grid(regions, solver.into(), heuristic.into())
         .map(|inner| WasmSolver { inner })
-        .map_err(|err| JsError::new(&err.to_string()))
+        .map_err(BuildError::from)
 }
 
 /// Builds a solver from a flat, row-major list of color regions.
@@ -61,10 +65,10 @@ pub fn build_from_flat(
     flat: Vec<u32>,
     solver: SolverKind,
     heuristic: HeuristicKind,
-) -> Result<WasmSolver, JsError> {
+) -> Result<WasmSolver, BuildError> {
     let regions: Vec<usize> = flat.into_iter().map(|color| color as usize).collect();
 
     QueensSolverConstructor::build_flat(regions, solver.into(), heuristic.into())
         .map(|inner| WasmSolver { inner })
-        .map_err(|err| JsError::new(&err.to_string()))
+        .map_err(BuildError::from)
 }
