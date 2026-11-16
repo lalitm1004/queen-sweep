@@ -9,6 +9,7 @@ on:
       - "crates/queen-sweep-core/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - ".github/workflows/**"
   pull_request:
     paths:
       - "queen-sweep-extension/**"
@@ -16,6 +17,7 @@ on:
       - "crates/queen-sweep-core/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - ".github/workflows/**"
 
 jobs:
   build:
