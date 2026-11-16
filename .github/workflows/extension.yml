@@ -50,10 +50,14 @@ jobs:
         working-directory: queen-sweep-extension
         run: npm ci
 
+      - name: Build WASM package
+        working-directory: queen-sweep-extension
+        run: npm run build:wasm
+
       - name: Typecheck
         working-directory: queen-sweep-extension
         run: npm run typecheck
 
-      - name: Build
+      - name: Build extension
         working-directory: queen-sweep-extension
-        run: npm run build
+        run: npm run build:js
