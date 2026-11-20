@@ -51,3 +51,35 @@ impl From<HeuristicKind> for HeuristicOption {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{CellKind, HeuristicKind, SolverKind};
+    use queen_sweep_core::dynamic::{HeuristicOption, SolverOption};
+
+    #[test]
+    fn solver_kind_converts_to_solver_option() {
+        assert_eq!(SolverOption::from(SolverKind::Dfs), SolverOption::DFSSolver);
+    }
+
+    #[test]
+    fn heuristic_kind_converts_to_heuristic_option() {
+        assert_eq!(
+            HeuristicOption::from(HeuristicKind::NoOp),
+            HeuristicOption::NoOpHeuristic
+        );
+        assert_eq!(
+            HeuristicOption::from(HeuristicKind::SmallestRegionFirst),
+            HeuristicOption::SmallestRegionFirstHeuristic
+        );
+    }
+
+    #[test]
+    fn cell_kind_discriminants_match_solver_contract() {
+        // The numeric values are part of the JS-facing contract (CellKind is
+        // serialized into SolveResult.board); they must stay 0/1/2.
+        assert_eq!(CellKind::Empty as u8, 0);
+        assert_eq!(CellKind::Blocked as u8, 1);
+        assert_eq!(CellKind::Queen as u8, 2);
+    }
+}

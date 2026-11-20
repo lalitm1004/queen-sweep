@@ -34,3 +34,4 @@ pkg
 node_modules/
 queen-sweep-extension/dist/
 queen-sweep-extension/src/wasm/
+queen-sweep-extension/coverage/

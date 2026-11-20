@@ -31,7 +31,6 @@ mod tests {
         heuristic::QueensHeuristic,
         primitives::{Color, Position},
     };
-    use std::collections::HashSet;
 
     fn board_4() -> QueensBoard<4> {
         let regions: [[Color; 4]; 4] =
@@ -55,15 +54,31 @@ mod tests {
     }
 
     #[test]
-    fn order_by_heuristic_preserves_set() {
+    fn order_by_heuristic_preserves_input_order() {
         let board = board_4();
         let placements = board.get_valid_placements();
 
         let ordered = NoOpHeuristic::order_by_heuristic(placements.clone(), &board);
 
-        // All placements are retained; only their order may (in principle) vary.
-        let ordered_set: HashSet<Position> = ordered.iter().copied().collect();
-        assert_eq!(ordered_set.len(), placements.len());
-        assert!(placements.iter().all(|p| ordered_set.contains(p)));
+        // NoOpHeuristic is the identity heuristic: with every placement scoring
+        // equally, the order must match the order produced by the board exactly.
+        assert_eq!(ordered, placements);
+    }
+
+    #[test]
+    fn order_by_heuristic_is_stable_for_equal_scores() {
+        // A manually constructed, deliberately out-of-order placement list with
+        // equal scores must be preserved (not reordered) since all scores tie.
+        let board = board_4();
+        let placements = vec![
+            Position::new(3, 3),
+            Position::new(0, 0),
+            Position::new(1, 2),
+            Position::new(0, 1),
+        ];
+
+        let ordered = NoOpHeuristic::order_by_heuristic(placements.clone(), &board);
+
+        assert_eq!(ordered, placements);
     }
 }

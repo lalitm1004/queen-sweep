@@ -29,3 +29,24 @@ jobs:
 
       - name: Run tests
         run: cargo test -p queen-sweep-core
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (with llvm-tools)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Measure coverage
+        run: cargo llvm-cov -p queen-sweep-core --lcov --fail-under-lines 95

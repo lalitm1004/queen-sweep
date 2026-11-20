@@ -10,10 +10,13 @@
 
 use queen_sweep_core::{
     board::QueensBoard,
-    heuristic::NoOpHeuristic,
+    dynamic::{HeuristicOption, QueensSolverConstructor, SolverOption},
+    heuristic::{NoOpHeuristic, SmallestRegionFirstHeuristic},
     primitives::{Color, ValidBoardSize},
     solver::{DepthFirstSearchSolver, QueensSolver, QueensSolveResult},
 };
+
+use proptest::prelude::*;
 
 fn solve<const N: usize>(board: QueensBoard<N>) -> QueensSolveResult<N>
 where
@@ -155,4 +158,116 @@ fn solver_is_deterministic() {
 
     assert_eq!(first.num_states_visited, second.num_states_visited);
     assert_eq!(first.solved_board, second.solved_board);
+}
+
+#[test]
+fn solves_column_stripe_n18() {
+    let board = unsafe { QueensBoard::new_unchecked(column_stripe_regions::<18>()) };
+    let result = DepthFirstSearchSolver::<18, SmallestRegionFirstHeuristic>::solve(board);
+    assert_valid_solution(&result.solved_board.expect("18x18 column stripe is solvable"));
+}
+
+#[test]
+fn const_generic_and_dynamic_agree_on_solution() {
+    // The runtime `dynamic` API must dispatch to the same search and produce an
+    // equivalent solution to the const-generic solver.
+    let flat = [0usize, 0, 1, 1, 0, 0, 1, 1, 2, 2, 3, 3, 2, 2, 3, 3];
+
+    let const_board = unsafe { QueensBoard::new_unchecked(quadrant_regions()) };
+    let const_result = DepthFirstSearchSolver::<4, SmallestRegionFirstHeuristic>::solve(const_board);
+    let const_queens: Vec<_> = const_result
+        .solved_board
+        .as_ref()
+        .unwrap()
+        .get_queen_positions()
+        .into_iter()
+        .map(|p| [p.row(), p.col()])
+        .collect();
+
+    let dynamic_solver = QueensSolverConstructor::build_flat(
+        flat.to_vec(),
+        SolverOption::DFSSolver,
+        HeuristicOption::SmallestRegionFirstHeuristic,
+    )
+    .unwrap();
+    let dynamic_result = dynamic_solver.solve();
+
+    assert!(dynamic_result.solved_board.is_some());
+    assert_eq!(dynamic_result.size, 4);
+
+    let mut dynamic_queens: Vec<_> = dynamic_result
+        .solved_board
+        .as_ref()
+        .unwrap()
+        .iter()
+        .enumerate()
+        .flat_map(|(r, row)| {
+            row.iter()
+                .enumerate()
+                .filter_map(move |(c, &cell)| (cell == queen_sweep_core::primitives::Cell::Queen).then_some([r, c]))
+        })
+        .collect();
+
+    let mut const_queens = const_queens;
+    const_queens.sort_unstable();
+    dynamic_queens.sort_unstable();
+
+    assert_eq!(const_queens, dynamic_queens);
+}
+
+/// A board whose colors are contiguous diagonal stripes; exercises a distinct
+/// layout family beyond quadrants and column stripes.
+fn diagonal_stripe_regions<const N: usize>() -> [[Color; N]; N] {
+    std::array::from_fn(|row| std::array::from_fn(|col| Color::from((row + col) % N)))
+}
+
+#[test]
+fn solves_diagonal_stripe_n5() {
+    let board = unsafe { QueensBoard::new_unchecked(diagonal_stripe_regions::<5>()) };
+    assert_valid_solution(&solve(board).solved_board.expect("diagonal stripe should be solvable"));
+}
+
+// ---------------------------------------------------------------------------
+// Property-based: any random layout containing every color must yield either a
+// valid solution or a clean `None`, and the solver must always terminate.
+// ---------------------------------------------------------------------------
+
+fn regions_from_flat<const N: usize>(flat: &[usize]) -> [[Color; N]; N] {
+    std::array::from_fn(|row| std::array::from_fn(|col| Color::from(flat[row * N + col])))
+}
+
+proptest! {
+    #[test]
+    fn random_grid_yields_valid_solution_or_none_n4(
+        mut flat in proptest::collection::vec(0usize..4, 16),
+    ) {
+        // Force every color to appear (on the diagonal), so the board is a
+        // well-formed input regardless of the random fill.
+        for i in 0..4 {
+            flat[i * 4 + i] = i;
+        }
+        let regions = regions_from_flat::<4>(&flat);
+        let board = unsafe { QueensBoard::new_unchecked(regions) };
+        let result = solve(board);
+
+        if let Some(solved) = &result.solved_board {
+            assert_valid_solution(solved);
+        }
+    }
+
+    #[test]
+    fn random_grid_yields_valid_solution_or_none_n5(
+        mut flat in proptest::collection::vec(0usize..5, 25),
+    ) {
+        for i in 0..5 {
+            flat[i * 5 + i] = i;
+        }
+        let regions = regions_from_flat::<5>(&flat);
+        let board = unsafe { QueensBoard::new_unchecked(regions) };
+        let result = solve(board);
+
+        if let Some(solved) = &result.solved_board {
+            assert_valid_solution(solved);
+        }
+    }
 }

@@ -621,15 +621,6 @@ mod tests {
     }
 
     #[test]
-    fn test_new_unchecked_initializes_board() {
-        let board = create_board::<4>();
-
-        assert_eq!(board.blocked_mask, [[false; 4]; 4]);
-        assert_eq!(board.queen_col_per_row, [None; 4]);
-        assert_eq!(board.queen_present_by_color, [false; 4]);
-    }
-
-    #[test]
     fn test_new_unchecked_initializes_hash() {
         let board = create_board::<4>();
 
@@ -841,6 +832,75 @@ mod tests {
         assert_eq!(board.blocked_mask, [[false; 8]; 8]);
         assert_eq!(board.queen_col_per_row, [None; 8]);
         assert_eq!(board.queen_present_by_color, [false; 8]);
+    }
+
+    // ------------------------------------------------------------------
+    // QueensBoard::new validation
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn test_new_rejects_color_out_of_range() {
+        let mut regions = quadrant_regions();
+        regions[0][0] = 4.into();
+
+        let err = QueensBoard::<4>::new(regions).unwrap_err();
+        assert!(matches!(
+            err,
+            super::BoardInitError::ColorOutOfRange {
+                color: 4,
+                max_colors: 4
+            }
+        ));
+    }
+
+    #[test]
+    fn test_new_rejects_color_well_out_of_range() {
+        let mut regions = quadrant_regions();
+        regions[2][3] = 100.into();
+
+        let err = QueensBoard::<4>::new(regions).unwrap_err();
+        assert!(matches!(
+            err,
+            super::BoardInitError::ColorOutOfRange {
+                color: 100,
+                max_colors: 4
+            }
+        ));
+    }
+
+    #[test]
+    fn test_new_rejects_too_few_distinct_colors() {
+        let regions: [[Color; 4]; 4] = [[0.into(); 4]; 4];
+
+        let err = QueensBoard::<4>::new(regions).unwrap_err();
+        assert!(matches!(
+            err,
+            super::BoardInitError::InvalidColorCount {
+                expected: 4,
+                found: 1
+            }
+        ));
+    }
+
+    #[test]
+    fn test_new_accepts_max_valid_color_index() {
+        // A board that uses every color 0..=N-1, including the highest index.
+        let mut regions = quadrant_regions();
+        // quadrant already uses 0..=3; swap so the max index is used prominently.
+        regions[3][3] = 3.into();
+
+        let board = QueensBoard::<4>::new(regions).expect("all colors 0..=3 are valid");
+        assert_eq!(usize::from(board.get_color_at_pos(Position::new(3, 3))), 3);
+    }
+
+    #[test]
+    fn test_new_accepts_valid_board_and_matches_regions() {
+        let regions = quadrant_regions();
+        let board = QueensBoard::<4>::new(regions).expect("quadrant is a valid board");
+
+        assert_eq!(board.get_color_regions(), &regions);
+        assert_eq!(board.get_size(), 4);
+        assert!(board.get_valid_placements().len() == 16);
     }
 
     // ------------------------------------------------------------------

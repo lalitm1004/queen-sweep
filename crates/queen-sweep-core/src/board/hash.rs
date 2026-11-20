@@ -168,6 +168,30 @@ mod tests {
     }
 
     #[test]
+    fn test_n15_boundary_uses_collision_free_encoding() {
+        // N = 15 is the largest collision-free size. With every row empty, each
+        // digit is `N` (15), so the hash is the base-16 number 0xFFFF...F of 15
+        // digits — i.e. 16^15 - 1 = 2^60 - 1.
+        assert_eq!(
+            compute_board_hash::<15>(&[None; 15]),
+            (1u64 << 60) - 1
+        );
+
+        // A distinct placement at the same boundary must not collide.
+        let mut with_queen = [None; 15];
+        with_queen[0] = Some(0);
+        assert_ne!(compute_board_hash(&with_queen), compute_board_hash::<15>(&[None; 15]));
+    }
+
+    #[test]
+    fn test_n16_boundary_uses_fnv1a() {
+        // N = 16 switches to FNV-1a; its known empty value differs from the
+        // collision-free encoding that would apply at N <= 15.
+        let empty = [None; 16];
+        assert_eq!(compute_board_hash(&empty), 0xd6607508f5a1e855);
+    }
+
+    #[test]
     fn test_small_board_distinguishes_empty_rows() {
         let a = [Some(0), None, Some(1)];
         let b = [None, Some(0), Some(1)];

@@ -106,3 +106,70 @@ export interface BuildError {
     message: string;
 }
 "#;
+
+#[cfg(test)]
+mod tests {
+    use super::{BuildError, BuildErrorCode};
+    use queen_sweep_core::{
+        board::BoardInitError,
+        dynamic::DynamicSolverError,
+    };
+
+    #[test]
+    fn build_error_codes_map_to_stable_strings() {
+        assert_eq!(BuildErrorCode::Empty.as_str(), "EMPTY");
+        assert_eq!(BuildErrorCode::NonSquare.as_str(), "NON_SQUARE");
+        assert_eq!(BuildErrorCode::NotPerfectSquare.as_str(), "NOT_PERFECT_SQUARE");
+        assert_eq!(BuildErrorCode::UnsupportedSize.as_str(), "UNSUPPORTED_SIZE");
+        assert_eq!(BuildErrorCode::InvalidInput.as_str(), "INVALID_INPUT");
+        assert_eq!(BuildErrorCode::BoardInitFailed.as_str(), "BOARD_INIT_FAILED");
+    }
+
+    #[test]
+    fn maps_every_dynamic_error_to_its_code() {
+        let cases = [
+            (DynamicSolverError::Empty, BuildErrorCode::Empty),
+            (
+                DynamicSolverError::NonSquare { rows: 2, cols: 3 },
+                BuildErrorCode::NonSquare,
+            ),
+            (
+                DynamicSolverError::NotPerfectSquare(5),
+                BuildErrorCode::NotPerfectSquare,
+            ),
+            (
+                DynamicSolverError::UnsupportedSize(2),
+                BuildErrorCode::UnsupportedSize,
+            ),
+            (
+                DynamicSolverError::BoardInit(BoardInitError::ColorOutOfRange {
+                    color: 9,
+                    max_colors: 4,
+                }),
+                BuildErrorCode::BoardInitFailed,
+            ),
+        ];
+
+        for (err, expected) in cases {
+            let build_err = BuildError::from(err);
+            assert_eq!(build_err.code, expected);
+        }
+    }
+
+    #[test]
+    fn build_error_preserves_underlying_message() {
+        let err = DynamicSolverError::UnsupportedSize(3);
+        let build_err = BuildError::from(err);
+        assert_eq!(
+            build_err.message,
+            "board size 3 is not supported (supported sizes: 1 and 4..=18)"
+        );
+    }
+
+    #[test]
+    fn build_error_new_sets_code_and_message() {
+        let err = BuildError::new(BuildErrorCode::InvalidInput, "bad payload");
+        assert_eq!(err.code, BuildErrorCode::InvalidInput);
+        assert_eq!(err.message, "bad payload");
+    }
+}

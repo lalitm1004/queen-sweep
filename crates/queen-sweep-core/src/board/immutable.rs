@@ -72,40 +72,6 @@ mod tests {
     }
 
     #[test]
-    fn test_new_creates_color_regions() {
-        let regions = [
-            [
-                Color::from(0usize),
-                Color::from(1usize),
-                Color::from(2usize),
-                Color::from(3usize),
-            ],
-            [
-                Color::from(1usize),
-                Color::from(2usize),
-                Color::from(3usize),
-                Color::from(0usize),
-            ],
-            [
-                Color::from(2usize),
-                Color::from(3usize),
-                Color::from(0usize),
-                Color::from(1usize),
-            ],
-            [
-                Color::from(3usize),
-                Color::from(0usize),
-                Color::from(1usize),
-                Color::from(2usize),
-            ],
-        ];
-
-        let board = ImmutableBoardData::<4>::new(regions);
-
-        assert_eq!(board.get_color_regions(), &regions);
-    }
-
-    #[test]
     fn test_get_color_at_pos() {
         let regions = create_color_regions::<4>();
         let board = ImmutableBoardData::<4>::new(regions);
@@ -209,14 +175,6 @@ mod tests {
 
             assert_eq!(matching_cells, 4);
         }
-    }
-
-    #[test]
-    fn test_get_color_regions() {
-        let regions = create_color_regions::<4>();
-        let board = ImmutableBoardData::<4>::new(regions);
-
-        assert_eq!(board.get_color_regions(), &regions);
     }
 
     #[test]

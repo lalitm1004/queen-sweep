@@ -375,6 +375,7 @@ dependencies = [
  "js-sys",
  "queen-sweep-core",
  "serde",
+ "serde_json",
  "tsify",
  "wasm-bindgen",
  "wasm-bindgen-test",

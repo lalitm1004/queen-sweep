@@ -1,0 +1,39 @@
+name: Mutation Testing
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 0" # weekly on Sundays
+  pull_request:
+    paths:
+      - "crates/queen-sweep-core/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/**"
+
+jobs:
+  mutants:
+    name: cargo-mutants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --locked
+
+      - name: Run mutation testing (diff-scoped on PRs)
+        if: github.event_name == 'pull_request'
+        run: |
+          git diff origin/main...HEAD > /tmp/mutants.diff
+          cargo mutants -p queen-sweep-core --timeout 10 --in-diff /tmp/mutants.diff
+
+      - name: Run mutation testing (full)
+        if: github.event_name != 'pull_request'
+        run: cargo mutants -p queen-sweep-core --timeout 10
