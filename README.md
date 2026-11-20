@@ -1,4 +1,4 @@
-![Queen Sweep Logo](.github/assets/queen-sweep-logo.png)
+![Queen Sweep Logo](.github/assets/queen-sweep.png)
 
 # ♛ QueenSweep
 
