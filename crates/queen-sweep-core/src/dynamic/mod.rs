@@ -282,7 +282,10 @@ mod tests {
         )
         .unwrap_err();
 
-        assert!(matches!(err, DynamicSolverError::NonSquare { rows: 3, cols: 2 }));
+        assert!(matches!(
+            err,
+            DynamicSolverError::NonSquare { rows: 3, cols: 2 }
+        ));
     }
 
     #[test]
@@ -329,7 +332,12 @@ mod tests {
 
         // Exactly one queen per row.
         for row in &board {
-            assert_eq!(row.iter().filter(|&&cell| cell == crate::primitives::Cell::Queen).count(), 1);
+            assert_eq!(
+                row.iter()
+                    .filter(|&&cell| cell == crate::primitives::Cell::Queen)
+                    .count(),
+                1
+            );
         }
     }
 

@@ -100,7 +100,10 @@ mod tests {
             .unwrap();
 
         let placements = board.get_valid_placements();
-        assert!(!placements.is_empty(), "test board should still have placements");
+        assert!(
+            !placements.is_empty(),
+            "test board should still have placements"
+        );
 
         let scored = SmallestRegionFirstHeuristic::score_placements(placements.clone(), &board);
 
@@ -109,7 +112,13 @@ mod tests {
         for (pos, score) in scored {
             let color = usize::from(board.get_color_at_pos(pos));
             let expected = independent_empty_count(&board, color) as f32;
-            assert_eq!(score, expected, "wrong score for ({}, {})", pos.row(), pos.col());
+            assert_eq!(
+                score,
+                expected,
+                "wrong score for ({}, {})",
+                pos.row(),
+                pos.col()
+            );
         }
     }
 
@@ -120,8 +129,7 @@ mod tests {
         let board = unequal_region_board();
         let placements = board.get_valid_placements();
 
-        let ordered =
-            SmallestRegionFirstHeuristic::order_by_heuristic(placements.clone(), &board);
+        let ordered = SmallestRegionFirstHeuristic::order_by_heuristic(placements.clone(), &board);
 
         // Same set of placements is returned.
         let mut expected: Vec<_> = placements.iter().map(|p| (p.row(), p.col())).collect();
@@ -138,7 +146,10 @@ mod tests {
             .iter()
             .map(|p| independent_empty_count(&board, usize::from(board.get_color_at_pos(*p))))
             .collect();
-        assert!(counts.windows(2).all(|w| w[0] <= w[1]), "not sorted by region size: {counts:?}");
+        assert!(
+            counts.windows(2).all(|w| w[0] <= w[1]),
+            "not sorted by region size: {counts:?}"
+        );
     }
 
     #[test]

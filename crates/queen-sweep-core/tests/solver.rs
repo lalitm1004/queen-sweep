@@ -13,7 +13,7 @@ use queen_sweep_core::{
     dynamic::{HeuristicOption, QueensSolverConstructor, SolverOption},
     heuristic::{NoOpHeuristic, SmallestRegionFirstHeuristic},
     primitives::{Color, ValidBoardSize},
-    solver::{DepthFirstSearchSolver, QueensSolver, QueensSolveResult},
+    solver::{DepthFirstSearchSolver, QueensSolveResult, QueensSolver},
 };
 
 use proptest::prelude::*;
@@ -83,7 +83,10 @@ where
     }
 
     assert!(seen_cols.iter().all(|&x| x), "not every column has a queen");
-    assert!(seen_colors.iter().all(|&x| x), "not every color has a queen");
+    assert!(
+        seen_colors.iter().all(|&x| x),
+        "not every color has a queen"
+    );
 
     for i in 0..N {
         for j in (i + 1)..N {
@@ -104,7 +107,9 @@ fn solves_quadrant_board_n4() {
     let board = unsafe { QueensBoard::new_unchecked(quadrant_regions()) };
     let result = solve(board);
 
-    let solved = result.solved_board.expect("quadrant board should be solvable");
+    let solved = result
+        .solved_board
+        .expect("quadrant board should be solvable");
     assert_valid_solution(&solved);
     assert!(result.num_states_visited > 0);
 }
@@ -164,7 +169,11 @@ fn solver_is_deterministic() {
 fn solves_column_stripe_n18() {
     let board = unsafe { QueensBoard::new_unchecked(column_stripe_regions::<18>()) };
     let result = DepthFirstSearchSolver::<18, SmallestRegionFirstHeuristic>::solve(board);
-    assert_valid_solution(&result.solved_board.expect("18x18 column stripe is solvable"));
+    assert_valid_solution(
+        &result
+            .solved_board
+            .expect("18x18 column stripe is solvable"),
+    );
 }
 
 #[test]
@@ -174,7 +183,8 @@ fn const_generic_and_dynamic_agree_on_solution() {
     let flat = [0usize, 0, 1, 1, 0, 0, 1, 1, 2, 2, 3, 3, 2, 2, 3, 3];
 
     let const_board = unsafe { QueensBoard::new_unchecked(quadrant_regions()) };
-    let const_result = DepthFirstSearchSolver::<4, SmallestRegionFirstHeuristic>::solve(const_board);
+    let const_result =
+        DepthFirstSearchSolver::<4, SmallestRegionFirstHeuristic>::solve(const_board);
     let const_queens: Vec<_> = const_result
         .solved_board
         .as_ref()
@@ -202,9 +212,9 @@ fn const_generic_and_dynamic_agree_on_solution() {
         .iter()
         .enumerate()
         .flat_map(|(r, row)| {
-            row.iter()
-                .enumerate()
-                .filter_map(move |(c, &cell)| (cell == queen_sweep_core::primitives::Cell::Queen).then_some([r, c]))
+            row.iter().enumerate().filter_map(move |(c, &cell)| {
+                (cell == queen_sweep_core::primitives::Cell::Queen).then_some([r, c])
+            })
         })
         .collect();
 
@@ -224,7 +234,11 @@ fn diagonal_stripe_regions<const N: usize>() -> [[Color; N]; N] {
 #[test]
 fn solves_diagonal_stripe_n5() {
     let board = unsafe { QueensBoard::new_unchecked(diagonal_stripe_regions::<5>()) };
-    assert_valid_solution(&solve(board).solved_board.expect("diagonal stripe should be solvable"));
+    assert_valid_solution(
+        &solve(board)
+            .solved_board
+            .expect("diagonal stripe should be solvable"),
+    );
 }
 
 // ---------------------------------------------------------------------------

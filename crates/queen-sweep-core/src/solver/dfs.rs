@@ -137,7 +137,10 @@ mod tests {
                 let (r2, c2) = positions[j];
                 let dr = (r1 as isize - r2 as isize).unsigned_abs();
                 let dc = (c1 as isize - c2 as isize).unsigned_abs();
-                assert!(dr > 1 || dc > 1, "adjacent queens at ({r1},{c1}) ({r2},{c2})");
+                assert!(
+                    dr > 1 || dc > 1,
+                    "adjacent queens at ({r1},{c1}) ({r2},{c2})"
+                );
             }
         }
     }
@@ -147,12 +150,13 @@ mod tests {
     #[test]
     fn both_heuristics_solve_board_requiring_backtracking() {
         let no_op = DepthFirstSearchSolver::<4, NoOpHeuristic>::solve(quadrant_board());
-        let smallest = DepthFirstSearchSolver::<4, SmallestRegionFirstHeuristic>::solve(
-            quadrant_board(),
-        );
+        let smallest =
+            DepthFirstSearchSolver::<4, SmallestRegionFirstHeuristic>::solve(quadrant_board());
 
         let no_op_solved = no_op.solved_board.expect("NoOp should solve the board");
-        let smallest_solved = smallest.solved_board.expect("SmallestRegionFirst should solve");
+        let smallest_solved = smallest
+            .solved_board
+            .expect("SmallestRegionFirst should solve");
 
         assert_valid_solution(&no_op_solved);
         assert_valid_solution(&smallest_solved);

@@ -110,19 +110,22 @@ export interface BuildError {
 #[cfg(test)]
 mod tests {
     use super::{BuildError, BuildErrorCode};
-    use queen_sweep_core::{
-        board::BoardInitError,
-        dynamic::DynamicSolverError,
-    };
+    use queen_sweep_core::{board::BoardInitError, dynamic::DynamicSolverError};
 
     #[test]
     fn build_error_codes_map_to_stable_strings() {
         assert_eq!(BuildErrorCode::Empty.as_str(), "EMPTY");
         assert_eq!(BuildErrorCode::NonSquare.as_str(), "NON_SQUARE");
-        assert_eq!(BuildErrorCode::NotPerfectSquare.as_str(), "NOT_PERFECT_SQUARE");
+        assert_eq!(
+            BuildErrorCode::NotPerfectSquare.as_str(),
+            "NOT_PERFECT_SQUARE"
+        );
         assert_eq!(BuildErrorCode::UnsupportedSize.as_str(), "UNSUPPORTED_SIZE");
         assert_eq!(BuildErrorCode::InvalidInput.as_str(), "INVALID_INPUT");
-        assert_eq!(BuildErrorCode::BoardInitFailed.as_str(), "BOARD_INIT_FAILED");
+        assert_eq!(
+            BuildErrorCode::BoardInitFailed.as_str(),
+            "BOARD_INIT_FAILED"
+        );
     }
 
     #[test]

@@ -69,7 +69,7 @@ fn cell_to_u8(cell: Cell) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use super::{cell_to_u8, SolveResult};
+    use super::{SolveResult, cell_to_u8};
     use crate::options::CellKind;
     use queen_sweep_core::{dynamic::DynamicSolveResult, primitives::Cell};
 
@@ -83,9 +83,7 @@ mod tests {
         assert_eq!(CellKind::Queen as u8, 2);
     }
 
-    fn dyn_result(
-        solved: Option<Vec<Vec<Cell>>>,
-    ) -> DynamicSolveResult {
+    fn dyn_result(solved: Option<Vec<Vec<Cell>>>) -> DynamicSolveResult {
         DynamicSolveResult {
             size: 4,
             solved_board: solved,

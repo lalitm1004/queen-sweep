@@ -172,15 +172,15 @@ mod tests {
         // N = 15 is the largest collision-free size. With every row empty, each
         // digit is `N` (15), so the hash is the base-16 number 0xFFFF...F of 15
         // digits — i.e. 16^15 - 1 = 2^60 - 1.
-        assert_eq!(
-            compute_board_hash::<15>(&[None; 15]),
-            (1u64 << 60) - 1
-        );
+        assert_eq!(compute_board_hash::<15>(&[None; 15]), (1u64 << 60) - 1);
 
         // A distinct placement at the same boundary must not collide.
         let mut with_queen = [None; 15];
         with_queen[0] = Some(0);
-        assert_ne!(compute_board_hash(&with_queen), compute_board_hash::<15>(&[None; 15]));
+        assert_ne!(
+            compute_board_hash(&with_queen),
+            compute_board_hash::<15>(&[None; 15])
+        );
     }
 
     #[test]

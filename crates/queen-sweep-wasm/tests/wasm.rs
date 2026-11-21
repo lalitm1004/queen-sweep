@@ -28,7 +28,9 @@ fn grid_ts() -> tsify::Ts<GridInput> {
 
 /// Extracts the `BuildError` from a `Result<WasmSolver, BuildError>` without
 /// requiring `WasmSolver: Debug` (which `unwrap_err` would demand).
-fn expect_build_error(result: Result<queen_sweep_wasm::WasmSolver, queen_sweep_wasm::BuildError>) -> queen_sweep_wasm::BuildError {
+fn expect_build_error(
+    result: Result<queen_sweep_wasm::WasmSolver, queen_sweep_wasm::BuildError>,
+) -> queen_sweep_wasm::BuildError {
     match result {
         Ok(_) => panic!("expected a build error"),
         Err(e) => e,
@@ -136,19 +138,28 @@ fn rejects_empty_flat() {
 #[wasm_bindgen_test]
 fn rejects_flat_not_perfect_square() {
     let result = build_from_flat(vec![0, 1, 2], SolverKind::Dfs, HeuristicKind::NoOp);
-    assert_eq!(expect_build_error(result).code, BuildErrorCode::NotPerfectSquare);
+    assert_eq!(
+        expect_build_error(result).code,
+        BuildErrorCode::NotPerfectSquare
+    );
 }
 
 #[wasm_bindgen_test]
 fn rejects_unsupported_size_two() {
     let result = build_from_flat(vec![0, 1, 1, 0], SolverKind::Dfs, HeuristicKind::NoOp);
-    assert_eq!(expect_build_error(result).code, BuildErrorCode::UnsupportedSize);
+    assert_eq!(
+        expect_build_error(result).code,
+        BuildErrorCode::UnsupportedSize
+    );
 }
 
 #[wasm_bindgen_test]
 fn rejects_unsupported_size_three() {
     let result = build_from_flat(vec![0u32; 9], SolverKind::Dfs, HeuristicKind::NoOp);
-    assert_eq!(expect_build_error(result).code, BuildErrorCode::UnsupportedSize);
+    assert_eq!(
+        expect_build_error(result).code,
+        BuildErrorCode::UnsupportedSize
+    );
 }
 
 #[wasm_bindgen_test]
@@ -167,7 +178,10 @@ fn rejects_color_out_of_range() {
         HeuristicKind::NoOp,
     );
 
-    assert_eq!(expect_build_error(result).code, BuildErrorCode::BoardInitFailed);
+    assert_eq!(
+        expect_build_error(result).code,
+        BuildErrorCode::BoardInitFailed
+    );
 }
 
 #[wasm_bindgen_test]
@@ -186,7 +200,10 @@ fn rejects_missing_color() {
         HeuristicKind::NoOp,
     );
 
-    assert_eq!(expect_build_error(result).code, BuildErrorCode::BoardInitFailed);
+    assert_eq!(
+        expect_build_error(result).code,
+        BuildErrorCode::BoardInitFailed
+    );
 }
 
 #[wasm_bindgen_test]
@@ -208,7 +225,10 @@ fn solve_result_board_values_match_cell_kind() {
 
     // The board only contains valid CellKind values.
     for cell in board.iter().flatten() {
-        assert!(*cell <= CellKind::Queen as u8, "unexpected cell value {cell}");
+        assert!(
+            *cell <= CellKind::Queen as u8,
+            "unexpected cell value {cell}"
+        );
     }
 }
 
